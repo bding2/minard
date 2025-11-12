@@ -14,6 +14,11 @@
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" media="screen">
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/toastr.min.css') }}" media="screen">
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/minard.css') }}" media="screen">
+        <style>
+            /* Center navbar contents */
+            .navbar-centered { text-align: center; }
+            .navbar-centered .navbar-nav { float: none; display: inline-block; }
+        </style>
         {% endblock %}
     </head>
     <body>
@@ -26,11 +31,12 @@
             {% endif %}
         {%- endmacro %}
         <div class="navbar navbar-default navbar-static-top">
-            <div class="container">
-                <div class="navbar-collapse collapse">
+            <div class="container-fluid">
+                <div class="navbar-collapse collapse navbar-centered">
                     <ul class="nav navbar-nav">
                         <!-- Dropdown L2 -->
                         {{ nav_link('snostream', 'Stream') }}
+                        {{ nav_link('xsnoed', 'XSNOED') }}
                         <!-- Dropdown Detector -->
                         <li class='dropdown'>
 			<a href='#' class='dropdown-toggle' data-toggle='dropdown'>Detector <b class='caret'></b></a>
@@ -45,7 +51,6 @@
                                 {{ nav_link('ecal_state_diff', 'ECAL State Diff') }}
                                 {{ nav_link('update_mtca_crate_mapping', 'MTCA+ Information') }}
                                 {{ nav_link('dead_time_runs','Dead Time Runs') }}
-                                {{ nav_link('xsnoed', 'XSNOED') }}
                             </ul>
                         <!-- Dropdown Logs -->
                         <li class='dropdown'>
