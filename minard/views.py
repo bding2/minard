@@ -2176,52 +2176,8 @@ def runselection_plots():
 
 @app.route('/xsnoed')
 def xsnoed():
+    """
+    XSNOED live streaming page via noVNC.
+    Container should be running on localhost:8080.
+    """
     return render_template('xsnoed.html')
-
-# Transparent proxy for the external XSNOED app so it can be displayed
-# under the same origin. This avoids remote X-Frame-Options/CSP blocking
-# by serving content through this app. Use with permission.
-@app.route('/xsnoed_proxy/')
-@app.route('/xsnoed_proxy/<path:subpath>')
-def xsnoed_proxy(subpath='xsnoed.html'):
-    try:
-        from requests.compat import urljoin
-    except Exception:
-        # fallback: simple join
-        def urljoin(a, b):
-            if a.endswith('/'):
-                return a + b
-            return a + '/' + b
-
-    base = 'https://www.sno.phy.queensu.ca/~phil/xsnoed/'
-    target_url = urljoin(base, subpath)
-
-    # Forward query string
-    params = dict(request.args) if request.args else None
-
-    try:
-        resp = requests.get(target_url, params=params, stream=True, timeout=15)
-    except Exception as e:
-        return ("Upstream fetch failed: %s" % str(e), 502)
-
-    # Build Flask response copying headers, but strip hop-by-hop and framing headers
-    excluded = set([
-        'content-encoding', 'transfer-encoding', 'connection', 'keep-alive',
-        'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'upgrade',
-        'x-frame-options', 'content-security-policy', 'content-security-policy-report-only'
-    ])
-
-    flask_resp = make_response(resp.content, resp.status_code)
-    for k, v in resp.headers.items():
-        if k.lower() in excluded:
-            continue
-        flask_resp.headers[k] = v
-
-    # Encourage caching of static assets a bit while keeping html fresh
-    ct = resp.headers.get('Content-Type', '')
-    if 'text/html' in ct:
-        flask_resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    else:
-        flask_resp.headers.setdefault('Cache-Control', 'public, max-age=300')
-
-    return flask_resp

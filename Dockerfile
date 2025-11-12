@@ -8,3 +8,4 @@ COPY entrypoint_xsnoed.sh /xsnoed/entrypoint_xsnoed.sh
 RUN chmod +x /xsnoed/entrypoint_xsnoed.sh
 
 ENTRYPOINT ["/xsnoed/entrypoint_xsnoed.sh"]
+CMD ["nlag.sp.snolab.ca"]
