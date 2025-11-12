@@ -28,25 +28,9 @@
     <div class="page-header">
       <h1>XSNOED Live Display</h1>
     </div>
-    
-    <div class="alert alert-info">
-      <strong>Live Session:</strong> Streaming XSNOED via noVNC from Docker container.
-      This is a shared session - changes are visible to all users.
-    </div>
 
-    <div class="control-panel">
-      <div class="btn-group">
-        <a class="btn btn-primary" href="#" id="reconnect-btn">Reconnect</a>
-        <a class="btn btn-default" target="_blank" rel="noopener" href="http://localhost:8080/vnc.html">Open in New Tab</a>
-      </div>
-      <span id="status-text" class="text-muted"></span>
-    </div>
-
-    <noscript>
-      <div class="alert alert-warning">JavaScript is required for the VNC viewer.</div>
-    </noscript>
-
-    <div id="embed-wrapper">
+    <!-- Place the embedded viewer first -->
+    <div id="embed-wrapper" style="margin-bottom:1em;">
       <div class="xsnoed-loader" id="xsnoed-loading">
         <p>Connecting to XSNOED session...</p>
       </div>
@@ -62,6 +46,22 @@
         </ul>
       </div>
     </div>
+
+    <div class="alert alert-info">
+      <strong>Live Session:</strong> Streaming XSNOED via noVNC from Docker container.
+      This is a shared session - changes are visible to all users.
+    </div>
+
+    <div class="control-panel">
+      <div class="btn-group">
+        <a class="btn btn-primary" href="#" id="reconnect-btn">Reconnect</a>
+      </div>
+      <span id="status-text" class="text-muted"></span>
+    </div>
+
+    <noscript>
+      <div class="alert alert-warning">JavaScript is required for the VNC viewer.</div>
+    </noscript>
   </div>
 {% endblock %}
 {% block script %}
