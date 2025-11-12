@@ -20,6 +20,23 @@
     .btn-group {
       margin-right: 1em;
     }
+    #embed-wrapper {
+      position: relative;
+    }
+    #lock-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      display: none;
+      z-index: 10;
+      cursor: not-allowed;
+    }
+    #lock-overlay.active {
+      display: block;
+    }
   </style>
 {% endblock %}
 {% block body %}
@@ -31,6 +48,7 @@
 
     <!-- Place the embedded viewer first -->
     <div id="embed-wrapper" style="margin-bottom:1em;">
+      <div id="lock-overlay"></div>
       <div class="xsnoed-loader" id="xsnoed-loading">
         <p>Connecting to XSNOED session...</p>
       </div>
@@ -55,6 +73,7 @@
     <div class="control-panel">
       <div class="btn-group">
         <a class="btn btn-primary" href="#" id="reconnect-btn">Reconnect</a>
+        <a class="btn btn-danger" href="#" id="lock-btn">🔒 Locked</a>
       </div>
       <span id="status-text" class="text-muted"></span>
     </div>
@@ -73,7 +92,10 @@
       var errorBox = document.getElementById('xsnoed-error');
       var statusText = document.getElementById('status-text');
       var reconnectBtn = document.getElementById('reconnect-btn');
+      var lockBtn = document.getElementById('lock-btn');
+      var lockOverlay = document.getElementById('lock-overlay');
       var loadTimeout;
+      var isLocked = true;
 
       function showLoading() {
         loading.style.display = 'block';
@@ -130,6 +152,24 @@
         e.preventDefault();
         connect();
       });
+
+      // Lock/unlock functionality
+      lockBtn.addEventListener('click', function(e){
+        e.preventDefault();
+        isLocked = !isLocked;
+        if (isLocked) {
+          lockOverlay.classList.add('active');
+          lockBtn.innerHTML = '🔒 Locked';
+          lockBtn.className = 'btn btn-danger';
+        } else {
+          lockOverlay.classList.remove('active');
+          lockBtn.innerHTML = '🔓 Unlocked';
+          lockBtn.className = 'btn btn-success';
+        }
+      });
+
+      // Set initial lock state
+      lockOverlay.classList.add('active');
 
       // Initial connection
       connect();
