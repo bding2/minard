@@ -1,0 +1,22 @@
+services:
+  xsnoed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xsnoed-stream
+    container_name: xsnoed-live
+    ports:
+      - "8080:8080"
+    environment:
+      - DISPLAY=:1
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.0'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
