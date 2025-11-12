@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+{% block title %}XSNOED Viewer{% endblock %}
+{% block head %}
+  {{ super() }}
+  <style>
+    #xsnoed-frame {width:100%;border:1px solid #ccc;min-height:70vh;}
+    .xsnoed-loader {padding:1em;color:#666;}
+  </style>
+{% endblock %}
+{% block body %}
+  {{ super() }}
+  <div class="container">
+    <div class="page-header">
+      <h1>XSNOED Display</h1>
+    </div>
+    <p>
+      Embedded XSNOED page served from
+      <code>https://www.sno.phy.queensu.ca/~phil/xsnoed/xsnoed.html</code>. If the viewer does not load (e.g. blocked by
+      X-Frame-Options or Content-Security-Policy), use the direct link below.
+    </p>
+    <p><a class="btn btn-primary" target="_blank" rel="noopener" href="https://www.sno.phy.queensu.ca/~phil/xsnoed/xsnoed.html">Open XSNOED in New Tab</a></p>
+    <noscript>
+      <div class="alert alert-warning">JavaScript is required for the embedded viewer. Use the link above.</div>
+    </noscript>
+    <div id="embed-wrapper">
+      <div class="xsnoed-loader" id="xsnoed-loading">Loading XSNOED…</div>
+      <iframe id="xsnoed-frame" title="XSNOED" loading="lazy" allowfullscreen
+        src="{{ url_for('xsnoed_proxy', subpath='xsnoed.html') }}"></iframe>
+      <div class="alert alert-danger" id="xsnoed-error" style="display:none;">
+        Unable to embed XSNOED (likely blocked by remote server headers). Please use the “Open XSNOED in New Tab” button above.
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block script %}
+  {{ super() }}
+  <script>
+    (function(){
+      var frame = document.getElementById('xsnoed-frame');
+      var loading = document.getElementById('xsnoed-loading');
+      var errorBox = document.getElementById('xsnoed-error');
+
+      // Fallback timeout: if not loaded in 8s, likely blocked
+      var timer = setTimeout(function(){
+        if (!frame.contentWindow || frame.contentWindow === window) {
+          loading.style.display='none';
+          errorBox.style.display='block';
+        }
+      }, 8000);
+
+      frame.addEventListener('load', function(){
+        clearTimeout(timer);
+        loading.style.display='none';
+        // Try to auto-size if same-origin (will fail silently if cross-origin)
+        try {
+          var doc = frame.contentDocument || frame.contentWindow.document;
+          var h = Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight);
+          if (h && h > 0) frame.style.minHeight = h + 'px';
+        } catch(e) {
+          // cross-origin, keep default height
+        }
+      });
+    })();
+  </script>
+{% endblock %}
