@@ -42,11 +42,6 @@
 {% block body %}
   {{ super() }}
   <div class="container-fluid">
-    <div class="page-header">
-      <h1>XSNOED Live Display</h1>
-    </div>
-
-    <!-- Place the embedded viewer first -->
     <div id="embed-wrapper" style="margin-bottom:1em;">
       <div id="lock-overlay"></div>
       <div class="xsnoed-loader" id="xsnoed-loading">
@@ -65,6 +60,10 @@
       </div>
     </div>
 
+    <div class="page-header">
+      <h1>XSNOED Live Display</h1>
+    </div>
+    
     <div class="alert alert-info">
       <strong>Live Session:</strong> Streaming XSNOED via noVNC from Docker container.
       This is a shared session - changes are visible to all users.
