@@ -1,5 +1,6 @@
 from .db import engine_nl
 from .detector_state import get_latest_run
+from sqlalchemy import text
 
 def occupancy_by_trigger_limit(limit, selected_run, run_range_low, run_range_high, gold):
     """
@@ -11,26 +12,26 @@ def occupancy_by_trigger_limit(limit, selected_run, run_range_low, run_range_hig
     try:
         if not selected_run and not run_range_high:
             latest_run = get_latest_run()
-            result = conn.execute("SELECT DISTINCT ON (run, crate, slot) "
+            result = conn.execute(text("SELECT DISTINCT ON (run, crate, slot) "
                                   "run, status, crate, slot "
-                                  "FROM esumh_occupancy_fail WHERE run > %s "
-                                  "ORDER BY run, crate, slot", \
-                                  (latest_run - limit))
+                                  "FROM esumh_occupancy_fail WHERE run > :run "
+                                  "ORDER BY run, crate, slot"), \
+                                  {'run': latest_run - limit})
         elif run_range_high:
-            result = conn.execute("SELECT DISTINCT ON (run, crate, slot) "
+            result = conn.execute(text("SELECT DISTINCT ON (run, crate, slot) "
                                   "run, status, crate, slot "
-                                  "FROM esumh_occupancy_fail WHERE run >= %s "
-                                  "AND run <= %s ORDER BY run, crate, slot", \
-                                  (run_range_low, run_range_high))
+                                  "FROM esumh_occupancy_fail WHERE run >= :run_range_low "
+                                  "AND run <= :run_range_high ORDER BY run, crate, slot"), \
+                                  {'run_range_low': run_range_low, 'run_range_high': run_range_high})
         else:
-            result = conn.execute("SELECT DISTINCT ON (run, crate, slot) "
+            result = conn.execute(text("SELECT DISTINCT ON (run, crate, slot) "
                                   "run, status, crate, slot "
-                                  "FROM esumh_occupancy_fail WHERE run = %s "
+                                  "FROM esumh_occupancy_fail WHERE run = :selected_run "
                                   "AND timestamp = (SELECT timestamp FROM "
-                                  "esumh_occupancy_fail WHERE run = %s ORDER BY "
+                                  "esumh_occupancy_fail WHERE run = :selected_run ORDER BY "
                                   "timestamp DESC LIMIT 1) "
-                                  "ORDER BY run, crate, slot", \
-                                  (selected_run, selected_run))
+                                  "ORDER BY run, crate, slot"), \
+                                  {'selected_run': selected_run})
     except Exception as e:
         return {}, {}, {}
 
@@ -78,11 +79,11 @@ def occupancy_by_trigger(trigger_type, run, find_issues):
     """
     conn = engine_nl.connect()
 
-    result = conn.execute("SELECT DISTINCT ON (run, lcn, trigger_bit) "
+    result = conn.execute(text("SELECT DISTINCT ON (run, lcn, trigger_bit) "
                           "lcn, trigger_norm, occupancy "
-                          "FROM trigger_occupancy WHERE trigger_bit = %s AND run = %s "
-                          "ORDER BY run, lcn, trigger_bit ", \
-                          (trigger_type, run))
+                          "FROM trigger_occupancy WHERE trigger_bit = :trigger_type AND run = :run "
+                          "ORDER BY run, lcn, trigger_bit "), \
+                          {'trigger_type': trigger_type, 'run': run})
 
     rows = result.fetchall()
 
@@ -113,12 +114,12 @@ def run_list(limit, run_range_low, run_range_high, gold):
 
     if not run_range_high:
         latest_run = get_latest_run()
-        result = conn.execute("SELECT DISTINCT ON (run) run FROM esumh_occupancy_fail "
-                              "WHERE run > %s ORDER BY run DESC", (latest_run - limit))
+        result = conn.execute(text("SELECT DISTINCT ON (run) run FROM esumh_occupancy_fail "
+                              "WHERE run > :run ORDER BY run DESC"), {'run': latest_run - limit})
     else:
-        result = conn.execute("SELECT DISTINCT ON (run) run FROM esumh_occupancy_fail "
-                              "WHERE run >= %s and run <= %s ORDER BY run DESC", \
-                              (run_range_low, run_range_high))
+        result = conn.execute(text("SELECT DISTINCT ON (run) run FROM esumh_occupancy_fail "
+                              "WHERE run >= :run_range_low and run <= :run_range_high ORDER BY run DESC"), \
+                              {'run_range_low': run_range_low, 'run_range_high': run_range_high})
 
     rows = result.fetchall()
     runs = []

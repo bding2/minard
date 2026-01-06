@@ -8,7 +8,7 @@ from minard.redistools import hmincrby, hmincrbyfloat, hdivh, hmincr, setavgmax
 from minard.timeseries import HASH_INTERVALS, HASH_EXPIRE
 from snotdaq import DataStream
 
-redis = Redis()
+redis = Redis(decode_responses=True)
 
 # number of seconds to keep CMOS records
 EXPIRE = 60

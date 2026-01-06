@@ -52,12 +52,12 @@ def heartbeat():
         return "unknown name\n", 400
 
     # expire every expire seconds
-    redis.setex('heartbeat:{name}'.format(name=name),status,expire)
+    redis.setex('heartbeat:{name}'.format(name=name), expire, status)
 
     up = redis.get('uptime:{name}'.format(name=name))
 
     if up is None:
-        redis.setex('uptime:{name}'.format(name=name),int(time.time()),expire)
+        redis.setex('uptime:{name}'.format(name=name),expire, int(time.time()))
     else:
         # still running, update expiration
         redis.expire('uptime:{name}'.format(name=name),expire)
@@ -94,6 +94,6 @@ def log():
                  'message': name + ' - ' + msg,
                  'time'   : datetime.now().isoformat()}
 
-        redis.setex('alarms:{id}'.format(id=id), json.dumps(alarm), 24*60*60)
+        redis.setex('alarms:{id}'.format(id=id), 24*60*60, json.dumps(alarm))
 
     return 'ok\n'

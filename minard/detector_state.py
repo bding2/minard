@@ -3,6 +3,7 @@ from .views import app
 from .db import engine, engine_nl
 from .channeldb import get_nominal_settings_for_run
 from collections import defaultdict
+from sqlalchemy import text
 
 def get_latest_run():
     """
@@ -10,7 +11,7 @@ def get_latest_run():
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT last_value FROM run_number")
+    result = conn.execute(text("SELECT last_value FROM run_number"))
 
     return result.fetchone()[0]
 
@@ -20,8 +21,7 @@ def get_runs_with_run_type(run, run_type, max_run=1e9):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT run from run_state where run > %s and run < %s AND (run_type & %s) > 0 ", \
-                          (run, max_run, run_type))
+    result = conn.execute(text(f"SELECT run from run_state where run > {run} and run < {max_run} AND (run_type & {run_type}) > 0 "))
 
     rows = result.fetchall()
     runs_with_runtype = []
@@ -37,7 +37,7 @@ def get_mtc_state_for_run(run=0):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM mtc WHERE key = (SELECT mtc FROM run_state WHERE run = %s)", (run,))
+    result = conn.execute(text(f"SELECT * FROM mtc WHERE key = (SELECT mtc FROM run_state WHERE run = {run})"))
 
     if result is None:
         return None
@@ -54,7 +54,7 @@ def get_tubii_state_for_run(run=0):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM tubii WHERE key = (SELECT tubii FROM run_state WHERE run = %s)", (run,))
+    result = conn.execute(text(f"SELECT * FROM tubii WHERE key = (SELECT tubii FROM run_state WHERE run = {run})"))
 
     keys = result.keys()
     row = result.fetchone()
@@ -71,7 +71,7 @@ def get_caen_state_for_run(run=0):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM caen WHERE key = (SELECT caen FROM run_state WHERE run = %s)", (run,))
+    result = conn.execute(text(f"SELECT * FROM caen WHERE key = (SELECT caen FROM run_state WHERE run = {run})"))
 
     if result is None:
         return None
@@ -88,12 +88,12 @@ def get_detector_state(run=0):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM detector_state WHERE run = %s", (run,))
+    result = conn.execute(text(f"SELECT * FROM detector_state WHERE run = {run}"))
 
     if result is None:
         return None
 
-    keys = result.keys()
+    keys = list(result.keys())
     rows = result.fetchall()
 
     if len(rows) == 0:
@@ -111,10 +111,10 @@ def get_detector_state(run=0):
 
         detector_state[crate][slot] = dict(zip(keys,row))
 
-    result = conn.execute("SELECT * FROM crate_state WHERE run = %s", (run,))
+    result = conn.execute(text(f"SELECT * FROM crate_state WHERE run = {run}"))
 
     if result is not None:
-        keys = result.keys()
+        keys = list(result.keys())
 
         for row in result:
             crate = row[keys.index('crate')]
@@ -136,12 +136,12 @@ def get_alarms(run=0):
     conn = engine.connect()
 
     if run == 0:
-        result = conn.execute("SELECT * FROM active_alarms, alarm_descriptions "
-            "WHERE active_alarms.alarm_id = alarm_descriptions.id")
+        result = conn.execute(text("SELECT * FROM active_alarms, alarm_descriptions "
+            "WHERE active_alarms.alarm_id = alarm_descriptions.id"))
     else:
         # get the start and stop times of the run
-        result = conn.execute("SELECT timestamp, end_timestamp FROM run_state "
-            "WHERE run = %s", (run,))
+        result = conn.execute(text("SELECT timestamp, end_timestamp FROM run_state "
+            f"WHERE run = {run}"))
 
         row = result.fetchone()
 
@@ -154,10 +154,9 @@ def get_alarms(run=0):
         # to do this, we find any alarm whose initial time is before the end of
         # the run and whose end time (cleared or acknowledged, whichever is
         # greater) is after the start of the run.
-        result = conn.execute("SELECT * FROM alarms, alarm_descriptions "
-            "WHERE (%s,COALESCE(%s,now())) OVERLAPS (time,GREATEST(COALESCE(cleared,now()), COALESCE(acknowledged,now()))) AND "
-            "alarms.alarm_id = alarm_descriptions.id",
-            (timestamp, end_timestamp))
+        result = conn.execute(text("SELECT * FROM alarms, alarm_descriptions "
+            f"WHERE ({timestamp},COALESCE({end_timestamp},now())) OVERLAPS (time,GREATEST(COALESCE(cleared,now()), COALESCE(acknowledged,now()))) AND "
+            "alarms.alarm_id = alarm_descriptions.id"))
 
     if result is None:
         return None
@@ -180,17 +179,17 @@ def compare_ecal_to_detector_state(run, crate, slot):
         run = get_latest_run()
 
     # Only select hardware values that are actually changed by the ECAL
-    result = conn.execute("SELECT DISTINCT ON (crate, slot) crate, slot, vthr, tcmos_isetm, "
+    result = conn.execute(text("SELECT DISTINCT ON (crate, slot) crate, slot, vthr, tcmos_isetm, "
                            "vbal_0, vbal_1, mbid, dbid, tdisc_rmp FROM fecdoc WHERE "
                            "timestamp < (SELECT timestamp FROM "
-                           "run_state WHERE run = %s) ORDER BY crate, slot, "
-                           "timestamp DESC LIMIT 304", run)
+                           f"run_state WHERE run = {run}) ORDER BY crate, slot, "
+                           "timestamp DESC LIMIT 304"))
 
     ecal_rows = result.fetchall()
 
-    result = conn.execute("SELECT DISTINCT ON (crate, slot) crate, slot, vthr, tcmos_isetm, "
+    result = conn.execute(text("SELECT DISTINCT ON (crate, slot) crate, slot, vthr, tcmos_isetm, "
                           "vbal_0, vbal_1, mbid, dbid, tdisc_rmp FROM detector_state WHERE "
-                          "run = %s ORDER BY crate, slot, timestamp DESC LIMIT 304", run)
+                          f"run = {run} ORDER BY crate, slot, timestamp DESC LIMIT 304"))
 
     detector_rows = result.fetchall()
 
@@ -557,7 +556,7 @@ def get_nhit_monitor_thresholds(limit=100, offset=0):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM nhit_monitor_thresholds ORDER BY timestamp DESC LIMIT %s OFFSET %s", (limit,offset))
+    result = conn.execute(text(f"SELECT * FROM nhit_monitor_thresholds ORDER BY timestamp DESC LIMIT {limit} OFFSET {offset}"))
 
     if result is None:
         return None
@@ -573,7 +572,7 @@ def get_nhit_monitor(key):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM nhit_monitor WHERE key=%s", (key,))
+    result = conn.execute(text(f"SELECT * FROM nhit_monitor WHERE key={key}"))
 
     if result is None:
         return None
@@ -591,20 +590,18 @@ def get_nhit_monitor_thresholds_nearline(limit=100, offset=0, sort_by="run", run
 
     if run_range_high:
         if sort_by == "run":
-            result = conn.execute("SELECT * FROM nhit_monitor_thresholds WHERE run >= %s AND run <= %s "
-                                  "ORDER BY run DESC, timestamp DESC LIMIT %s OFFSET %s", \
-                                  (run_range_low, run_range_high, limit, offset))
+            result = conn.execute(text(f"SELECT * FROM nhit_monitor_thresholds WHERE run >= {run_range_low} AND run <= {run_range_high} "
+                                  f"ORDER BY run DESC, timestamp DESC LIMIT {limit} OFFSET {offset}"))
         if sort_by == "key":
-            result = conn.execute("SELECT * FROM nhit_monitor_thresholds WHERE run >= %s AND run <= %s "
-                                  "ORDER BY key DESC, timestamp DESC LIMIT %s OFFSET %s", \
-                                  (run_range_low, run_range_high, limit, offset))
+            result = conn.execute(text(f"SELECT * FROM nhit_monitor_thresholds WHERE run >= {run_range_low} AND run <= {run_range_high} "
+                                  f"ORDER BY key DESC, timestamp DESC LIMIT {limit} OFFSET {offset}"))
     else:
         if sort_by == "run":
-            result = conn.execute("SELECT * FROM nhit_monitor_thresholds ORDER BY run DESC, " 
-                                  "timestamp DESC LIMIT %s OFFSET %s", (limit,offset))
+            result = conn.execute(text("SELECT * FROM nhit_monitor_thresholds ORDER BY run DESC, " 
+                                  f"timestamp DESC LIMIT {limit} OFFSET {offset}"))
         if sort_by == "key":
-            result = conn.execute("SELECT * FROM nhit_monitor_thresholds ORDER BY key DESC, " 
-                                  "timestamp DESC LIMIT %s OFFSET %s", (limit,offset))
+            result = conn.execute(text("SELECT * FROM nhit_monitor_thresholds ORDER BY key DESC, " 
+                                  f"timestamp DESC LIMIT {limit} OFFSET {offset}"))
 
     if result is None:
         return None
@@ -620,7 +617,7 @@ def get_nhit_monitor_nearline(key):
     """
     conn = engine_nl.connect()
 
-    result = conn.execute("SELECT * FROM nhit_monitor WHERE key=%s", (key,))
+    result = conn.execute(text(f"SELECT * FROM nhit_monitor WHERE key={key}"))
 
     if result is None:
         return None
@@ -640,7 +637,7 @@ def get_latest_trigger_scans():
     """
     conn = engine.connect()
 
-    result = conn.execute("select distinct on (name) * from trigger_scan order by name, key desc")
+    result = conn.execute(text("select distinct on (name) * from trigger_scan order by name, key desc"))
 
     if result is None:
         return None
@@ -666,17 +663,16 @@ def get_trigger_scan_for_run(run):
 
     if run == 0:
         # get the latest trigger scan
-        result = conn.execute("SELECT DISTINCT ON (name) * FROM trigger_scan "
-            "ORDER BY name, key DESC", (run,))
+        result = conn.execute(text("SELECT DISTINCT ON (name) * FROM trigger_scan "
+            "ORDER BY name, key DESC"))
     else:
-        result = conn.execute("SELECT DISTINCT ON (name) * FROM trigger_scan "
-            "WHERE timestamp < (SELECT timestamp FROM run_state WHERE run = %s) "
-            "ORDER BY name, key DESC", (run,))
+        result = conn.execute(text("SELECT DISTINCT ON (name) * FROM trigger_scan "
+            f"WHERE timestamp < (SELECT timestamp FROM run_state WHERE run = {run}) "
+            "ORDER BY name, key DESC"))
 
-    keys = result.keys()
-    rows = result.fetchall()
+    rows = result.mappings().fetchall()
 
-    return dict((row['name'], dict(zip(keys,row))) for row in rows if row['name'] in names)
+    return dict((row['name'], dict(row)) for row in rows if row['name'] in names)
 
 def fetch_from_table_with_key(table_name, key, key_name='key'):
     if key is None:
@@ -685,7 +681,7 @@ def fetch_from_table_with_key(table_name, key, key_name='key'):
     conn = engine.connect()
 
     command = "SELECT * FROM %s WHERE %s = %s" % (table_name, key_name, key)
-    res =  conn.execute(command)
+    res =  conn.execute(text(command))
 
     try:
         values = zip(res.keys(),res.fetchone())
@@ -730,9 +726,9 @@ def get_run_state(run):
 
     if run is None:
         # Return the latest run
-        result = conn.execute("SELECT * FROM run_state ORDER BY timestamp DESC LIMIT 1")
+        result = conn.execute(text("SELECT * FROM run_state ORDER BY timestamp DESC LIMIT 1"))
     else:
-        result = conn.execute("SELECT * FROM run_state WHERE run = %s", (run,))
+        result = conn.execute(text(f"SELECT * FROM run_state WHERE run = {run}"))
 
     if result is None:
         return None
@@ -748,7 +744,7 @@ def get_run_state(run):
 def get_hv_nominals():
     conn = engine.connect()
     command = "SELECT crate,supply,nominal FROM hvparams ORDER BY crate ASC"
-    res =  conn.execute(command)
+    res =  conn.execute(text(command))
     if res is None:
         return None
     ret = {}
@@ -756,7 +752,7 @@ def get_hv_nominals():
         if crate == 16 and supply == "B":
             ret["OWL"] = nominal
         else:
-            ret[crate] = nominal
+            ret[str(crate)] = nominal
     return ret
 
 def translate_trigger_mask(maskVal):
@@ -788,8 +784,8 @@ def translate_trigger_mask(maskVal):
                                 (24,"NCD"),
                                 (25,"SOFT_GT")
                             ]
-    triggers =  filter(lambda x: ((maskVal & 1<<x[0]) > 0),trigger_bit_to_string)
-    return map(lambda x: x[1],triggers)
+    triggers =  list(filter(lambda x: ((maskVal & 1<<x[0]) > 0),trigger_bit_to_string))
+    return list(map(lambda x: x[1],triggers))
 
 def translate_ped_delay(coarse_delay, fine_delay):
     MIN_GT_DELAY = 18.35; # Taken from daq/src/mtc.c
@@ -815,11 +811,11 @@ def translate_control_reg(control_reg):
         (15, "kTESTMEM2"),
         (16, "FIFO_RESET")
         ]
-    word_list = filter(lambda x:((control_reg & 1<<x[0]) >0), bit_to_string)
-    return map(lambda x:x[1], word_list)
+    word_list = list(filter(lambda x:((control_reg & 1<<x[0]) >0), bit_to_string))
+    return list(map(lambda x:x[1], word_list))
 
 def translate_crate_mask(mask):
-    return map(lambda x: (mask & 1<<x) > 0,range(0,20))
+    return list(map(lambda x: (mask & 1<<x) > 0,range(0,20)))
 
 def translate_mtca_dacs(dacs):
     ret = {}
@@ -865,11 +861,11 @@ def translate_caen_front_panel_io_control(mask):
     ret["trigger_voltage_level"] = "TTL" if (mask & 1) >0 else "NIM"
     ret["high_impedance_output"] = (mask & 1<<1) > 0
     ret["lvds_input"] = [(mask & 1<<i) > 0 for i in range(2,6)]
-    bit_6 = (mask & i <<6)>0
-    bit_7 = (mask & i <<7)>0
+    bit_6 = (mask & mask <<6)>0
+    bit_7 = (mask & mask <<7)>0
     ret["lvds_mode"] = "Programmed IO" if bit_6 else "Pattern" if bit_7 else "General Purpose"
-    ret["trig_out_logic_level"] = 1 if (mask & i<<14) >0 else 0
-    ret["io_test_mode"] = (mask & i<<15) >0
+    ret["trig_out_logic_level"] = 1 if (mask & mask<<14) >0 else 0
+    ret["io_test_mode"] = (mask & mask<<15) >0
     return ret
 
 def translate_caen_acquisition_control(mask):
@@ -912,8 +908,7 @@ def caen_human_readable_filter(caen):
     ret = {}
     try:
         ret['post_trigger'] = caen['post_trigger']*4
-        ret['enabled_channels'] = \
-            map(lambda x: (1 << x & caen['channel_mask']) > 0, range(8))
+        ret['enabled_channels'] = list(map(lambda x: (1 << x & caen['channel_mask']) > 0, range(8)))
 
         ret.update(translate_caen_front_panel_io_control(caen['front_panel_io_control']))
         ret.update(translate_caen_acquisition_control(caen['front_panel_io_control']))
@@ -1034,7 +1029,7 @@ def crate_human_readable_filter(crate):
     return ret
 
 def translate_fec_disable_mask(mask):
-    return map(lambda x: 0 if ((mask & (1<<x))>0) else 1,range(32))
+    return list(map(lambda x: 0 if ((mask & (1<<x))>0) else 1,range(32)))
 
 @app.template_filter('fec_human_readable')
 def fec_human_readable_filter(fec):
@@ -1045,7 +1040,7 @@ def fec_human_readable_filter(fec):
         ret['vthrs'] = fec['vthr']
         ret['num_n20_triggers'] = len(filter(None,fec['tr20_mask']))
         ret['num_n100_triggers'] = len(filter(None,fec['tr100_mask']))
-        ret['DB_IDs'] = map(lambda x: '0x%x' % x,fec['dbid'])
+        ret['DB_IDs'] = list(map(lambda x: '0x%x' % x,fec['dbid']))
         ret['MB_ID'] = '0x%x' % fec['mbid']
         ret['sequencers'] = translate_fec_disable_mask(fec['disable_mask'])
         ret['num_sequencers'] = len(filter(None,ret['sequencers']))
@@ -1081,7 +1076,7 @@ def trigger_scan_human_readable(trigger_scan):
         return False
     res = {}
     try:
-        for name, obj in trigger_scan.iteritems():
+        for name, obj in trigger_scan.items():
             name = trigger_scan_string_translate(name)
             vals = False
             if(obj):

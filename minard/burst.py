@@ -4,6 +4,7 @@ from .db import engine, engine_nl
 from time import strftime
 from datetime import datetime
 import calendar
+from sqlalchemy import text
 
 def load_burst_runs(offset, limit, level=2):
     """
@@ -274,7 +275,7 @@ def get_run_type(run):
     conn = engine.connect()
     run_string = ""
     try:
-        result = conn.execute("SELECT run_type FROM run_state WHERE run = %s", run)
+        result = conn.execute(text("SELECT run_type FROM run_state WHERE run = :run"), {'run': run})
         runtype = result.fetchone()
         run_string = ""
 

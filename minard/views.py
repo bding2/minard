@@ -6,8 +6,8 @@ import time
 from redis import Redis
 from os.path import join
 import json
-import HLDQTools
-import RSTools
+from . import HLDQTools
+from . import RSTools
 import requests
 from .tools import parseiso, total_seconds
 from collections import deque, namedtuple
@@ -19,31 +19,31 @@ from math import isnan
 import os
 import sys
 import random
-import detector_state
-import orca
-import nlrat
-import nearline_monitor
-import nearlinedb
-import nearline_settings
-import pingcratesdb
-import triggerclockjumpsdb
-import muonsdb
-import redisdb
-import cssProc as cssproc
-import fiber_position
-import occupancy
-import channelflagsdb
-import dropout
-import pmtnoisedb
-import gain_monitor
-import activity
-import scintillator_level
-import burst as burst_f
-import presn as presn_f
-import pca_processing as pcaprocessing_f
-from light_level import get_light_level, get_light_level_clean, get_all_light_levels
-from shifter_information import get_shifter_information, set_shifter_information, ShifterInfoForm, get_experts, get_supernova_experts
-from run_list import golden_run_list
+from . import detector_state
+from . import orca
+from . import nlrat
+from . import nearline_monitor
+from . import nearlinedb
+from . import nearline_settings
+from . import pingcratesdb
+from . import triggerclockjumpsdb
+from . import muonsdb
+from . import redisdb
+from . import cssProc as cssproc
+from . import fiber_position
+from . import occupancy
+from . import channelflagsdb
+from . import dropout
+from . import pmtnoisedb
+from . import gain_monitor
+from . import activity
+from . import scintillator_level
+from . import burst as burst_f
+from . import presn as presn_f
+from . import pca_processing as pcaprocessing_f
+from .light_level import get_light_level, get_light_level_clean, get_all_light_levels
+from .shifter_information import get_shifter_information, set_shifter_information, ShifterInfoForm, get_experts, get_supernova_experts
+from .run_list import golden_run_list
 from .polling import polling_runs, polling_info, polling_info_card, polling_check, get_cmos_rate_history, polling_summary, get_most_recent_polling_info, get_vmon, get_base_current_history, get_vmon_history
 from .channeldb import ChannelStatusForm, upload_channel_status, get_channels, get_channel_status, get_channel_status_form, get_channel_history, get_pmt_info, get_nominal_settings, get_discriminator_threshold, get_all_thresholds, get_maxed_thresholds, get_gtvalid_lengths, get_pmt_types, pmt_type_description, get_fec_db_history
 from .ecaldb import ecal_state, penn_daq_ccc_by_test, get_penn_daq_tests
@@ -53,8 +53,8 @@ from .resistor import get_resistors, ResistorValuesForm, get_resistor_values_for
 from .pedestalsdb import get_pedestals, bad_pedestals, qhs_by_channel
 from datetime import datetime, timedelta
 from functools import wraps, update_wrapper
-from dead_time import get_dead_time, get_dead_time_runs, get_dead_time_run_by_key
-from radon_monitor import get_radon_monitor
+from .dead_time import get_dead_time, get_dead_time_runs, get_dead_time_run_by_key
+from .radon_monitor import get_radon_monitor
 
 TRIGGER_NAMES = \
 ['100L',
@@ -94,7 +94,7 @@ class Program(object):
         self.expire = expire
         self.display_log = display_log
 
-redis = Redis()
+redis = Redis(decode_responses=True)
 
 PROGRAMS = [#Program('builder','builder1', description="event builder"),
             Program('L2-client','buffer1', description="L2 processor"),
@@ -184,7 +184,7 @@ def get_daq_log_warnings(run):
     with open(os.path.join(app.config["DAQ_LOG_DIR"], "daq_%08i.log" % run)) as f:
         for line in f:
             # match the log level
-            match = re.match('.+? ([.\-*#])', line)
+            match = re.match(r'.+? ([.\-*#])', line)
 
             if match and match.group(1) == '#':
                 warnings.append(line)
@@ -647,7 +647,7 @@ def orca_session_logs():
     results = orca.get_orca_session_logs(limit, offset)
 
     if results is None:
-	return render_template('orca_session_logs.html', error="No orca session logs.")
+        return render_template('orca_session_logs.html', error="No orca session logs.")
 
     return render_template('orca_session_logs.html', results=results, limit=limit, offset=offset)
 
@@ -658,7 +658,7 @@ def nhit_monitor_thresholds():
     results = detector_state.get_nhit_monitor_thresholds(limit, offset)
 
     if results is None:
-	return render_template('nhit_monitor_thresholds.html', error="No nhit monitor records.")
+        return render_template('nhit_monitor_thresholds.html', error="No nhit monitor records.")
 
     return render_template('nhit_monitor_thresholds.html', results=results, limit=limit, offset=offset)
 
@@ -667,7 +667,7 @@ def nhit_monitor(key):
     results = detector_state.get_nhit_monitor(key)
 
     if results is None:
-	return render_template('nhit_monitor.html', error="No nhit monitor record with key %i." % key)
+        return render_template('nhit_monitor.html', error="No nhit monitor record with key %i." % key)
 
     return render_template('nhit_monitor.html', results=results)
 
@@ -681,7 +681,7 @@ def nhit_monitor_thresholds_nearline():
     results = detector_state.get_nhit_monitor_thresholds_nearline(limit, offset, sort_by, run_range_low, run_range_high)
 
     if results is None:
-	return render_template('nhit_monitor_thresholds_nearline.html', error="No nhit monitor records.")
+        return render_template('nhit_monitor_thresholds_nearline.html', error="No nhit monitor records.")
 
     return render_template('nhit_monitor_thresholds_nearline.html', results=results, limit=limit, offset=offset, sort_by=sort_by, run_range_low=run_range_low, run_range_high=run_range_high)
 
@@ -690,7 +690,7 @@ def nhit_monitor_nearline(key):
     results = detector_state.get_nhit_monitor_nearline(key)
 
     if results is None:
-	return render_template('nhit_monitor_nearline.html', error="No nhit monitor record with key %i." % key)
+        return render_template('nhit_monitor_nearline.html', error="No nhit monitor record with key %i." % key)
 
     return render_template('nhit_monitor_nearline.html', results=results)
 
@@ -699,7 +699,7 @@ def trigger():
     results = detector_state.get_latest_trigger_scans()
 
     if results is None:
-	return render_template('trigger.html', error="No trigger scans.")
+        return render_template('trigger.html', error="No trigger scans.")
 
     return render_template('trigger.html', results=results)
 
@@ -759,6 +759,8 @@ def get_l2():
 
     try:
         files, times = zip(*redis.zrange('l2:%s' % name, 0, -1, withscores=True))
+        files = list(files)
+        times = list(times)
     except ValueError:
         # no files
         files = []
@@ -772,6 +774,8 @@ def get_l3():
 
     try:
         files, times = zip(*redis.zrange('l3:%s' % name, 0, -1, withscores=True))
+        files = list(files)
+        times = list(times)
     except ValueError:
         # no files
         files = []
@@ -1132,7 +1136,7 @@ def query():
         p = redis.pipeline()
         for i in range(seconds):
             p.lrange('ts:1:{ts}:{name}'.format(ts=now-i,name=name),0,-1)
-        nhit = map(int,sum(p.execute(),[]))
+        nhit = list(map(int,sum(p.execute(),[])))
         return jsonify(value=nhit)
 
     if name in ('occupancy','cmos','base'):
@@ -1165,7 +1169,7 @@ def query():
             sum_ = redis.hmget('ts:%i:%i:%s:sum' % (interval,i,name),CHANNELS)
             len_ = redis.hmget('ts:%i:%i:%s:len' % (interval,i,name),CHANNELS)
 
-            values = map(div,sum_,len_)
+            values = list(map(div,sum_,len_))
         else:
             hits = redis.hmget('ts:%i:%i:occupancy:hits' % (interval,i), CHANNELS)
             count = int(redis.get('ts:%i:%i:occupancy:count' % (interval,i)))
@@ -1232,17 +1236,17 @@ def owl_tubes():
     values = zip(*values)
 
     # filter None values in sub lists
-    values = map(lambda x: filter(lambda x: x is not None, x), values)
+    values = list(map(lambda x: list(filter(lambda x: x is not None, x)), values))
 
     # convert to floats
-    values = map(lambda x: map(float, x), values)
+    values = list(map(lambda x: map(float, x), values))
 
     if method == 'max':
 	# calculate max value in each time bin.
-        values = map(lambda x: max(x) if len(x) else None, values)
+        values = list(map(lambda x: max(x_list) if len(x_list := list(x)) else None, values))
     else:
 	# calculate mean value in each time bin
-        values = map(lambda x: sum(x)/len(x) if len(x) else None, values)
+        values = list(map(lambda x: sum(x_list)/len(x_list) if len(x_list := list(x)) else None, values))
 
     return jsonify(values=values)
 
@@ -1315,7 +1319,7 @@ def get_metric(expr, start, stop, step):
 
         interval = get_interval(step)
 
-        values = map(lambda x: int(x)/interval if x else 0, values)
+        values = list(map(lambda x: int(x)/interval if x else 0, values))
     else:
         if expr in TRIGGER_NAMES:
             field = TRIGGER_NAMES.index(expr)
@@ -1330,9 +1334,9 @@ def get_metric(expr, start, stop, step):
         interval = get_interval(step)
         if expr in TRIGGER_NAMES or expr in ('TOTAL','L1','L2','ORPHANS','BURSTS', 'polling'):
             # trigger counts are zero by default
-            values = map(lambda x: int(x)/interval if x else 0, values)
+            values = list(map(lambda x: int(x)/interval if x else 0, values))
         else:
-            values = map(lambda x: int(x)/interval if x else None, values)
+            values = list(map(lambda x: int(x)/interval if x else None, values))
 
     return values
 
@@ -2120,14 +2124,14 @@ def runselection_plots():
         try:
             datelow = datetime.strptime(datelow, "%Y-%m-%d")
         except ValueError: #invalid date
-            datelow = datetime(2024, 02, 19)
+            datelow = datetime(2024, 2, 19)
     else:
         datelow = default_datelow
     if datehigh is not None:
         try:
             datehigh = datetime.strptime(datehigh, "%Y-%m-%d")
         except ValueError: #invalid date
-            datehigh = datetime(2024, 05, 29)
+            datehigh = datetime(2024, 5, 29)
     else:
         datehigh = default_datehigh
     # Use this to get run info from databases, to display in list

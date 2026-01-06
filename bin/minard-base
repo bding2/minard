@@ -94,14 +94,14 @@ if __name__ == '__main__':
         log.set_logfile(args.logfile)
 
     if args.daemonize:
-	daemonize()
+        daemonize()
 
     while True:
-	try:
-	    base_consumer(args.host,args.port)
-	except socket.error as e:
-	    log.warn('failed to connect to data: %s' % str(e))
-	    time.sleep(60)
-	except Exception as e:
-	    log.warn('unhandled exception: %s' % str(e))
-	    time.sleep(60)
+        try:
+            base_consumer(args.host,args.port)
+        except socket.error as e:
+            log.warn('failed to connect to data: %s' % str(e))
+            time.sleep(60)
+        except Exception as e:
+            log.warn('unhandled exception: %s' % str(e))
+            time.sleep(60)

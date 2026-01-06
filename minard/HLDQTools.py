@@ -1,6 +1,7 @@
 import couchdb
 from minard import app
 from .db import engine
+from sqlalchemy import text
 
 #TELLIE Tools
 def import_TELLIE_runnumbers(limit=10, offset=0):
@@ -9,7 +10,7 @@ def import_TELLIE_runnumbers(limit=10, offset=0):
     """
     conn = engine.connect()
     # select all runs which have the external source and tellie bits checked
-    result = conn.execute("SELECT run FROM run_state WHERE (run_type & 2064) = 2064 ORDER BY run DESC LIMIT %s OFFSET %s", (limit,offset))
+    result = conn.execute(text("SELECT run FROM run_state WHERE (run_type & 2064) = 2064 ORDER BY run DESC LIMIT :limit OFFSET :offset"), {'limit': limit, 'offset': offset})
     return [row[0] for row in result.fetchall()]
 
 def import_TELLIEDQ_ratdb(runs):
@@ -105,7 +106,7 @@ def import_SMELLIE_runnumbers(limit=10,offset=0):
     #Returns the latest SMELLIE runs.
     conn = engine.connect()
     # select all runs which have the external source and smellie bits checked
-    result = conn.execute("SELECT run FROM run_state WHERE (run_type & 4112) = 4112 ORDER BY run DESC LIMIT %s OFFSET %s", (limit,offset))
+    result = conn.execute(text("SELECT run FROM run_state WHERE (run_type & 4112) = 4112 ORDER BY run DESC LIMIT :limit OFFSET :offset"), {'limit': limit, 'offset': offset})
     return [row[0] for row in result.fetchall()]
 
 def import_SMELLIEDQ_ratdb(runs):

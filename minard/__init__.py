@@ -46,13 +46,15 @@ app.config.from_envvar('MINARD_SETTINGS', silent=False)
 # Eventually I started looking for another way to do it and found this post:
 # https://medium.com/@trstringer/logging-flask-and-gunicorn-the-manageable-way-2e6f0b8beb2f
 # which discusses how to pipe Flask's messages to the gunicorn logger.
-@app.before_first_request
 def setup_logging():
     if not app.debug:
         import logging
         gunicorn_logger = logging.getLogger('gunicorn.error')
         for handler in gunicorn_logger.handlers:
             app.logger.addHandler(handler)
+
+with app.app_context():
+    setup_logging()
 
 app.wsgi_app = ReverseProxied(app.wsgi_app)
 

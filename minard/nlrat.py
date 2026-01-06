@@ -1,4 +1,4 @@
-import detector_state
+from . import detector_state
 import glob
 import os
 import re
@@ -6,7 +6,7 @@ from redis import Redis
 from .views import app
 
 REDIS_SET = "nlrat-runs"
-redis = Redis()
+redis = Redis(decode_responses=True)
 
 RUN_TYPES = {
     0:"Maintenance",
@@ -26,7 +26,7 @@ def extract_run_type(run_word):
     :param int run_word:
     :returns string:
     '''
-    for k, v in RUN_TYPES.iteritems():
+    for k, v in RUN_TYPES.items():
         if (run_word & (1 << k)):
             return v
     return "Unknown"

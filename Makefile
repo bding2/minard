@@ -37,12 +37,12 @@ install: /opt/minard/bin/activate
 	$(INSTALL) init/minard-cmos /etc/init.d/
 	$(INSTALL) init/minard-base /etc/init.d/
 	$(INSTALL) init/baseline_monitor /etc/init.d/
-	chkconfig gunicorn on
-	chkconfig gunicorn_snoplus_log on
-	chkconfig minard-dispatch on
-	chkconfig minard-cmos on
-	chkconfig minard-base on
-	chkconfig baseline_monitor on
+	update-rc.d gunicorn on
+	update-rc.d gunicorn_snoplus_log on
+	update-rc.d minard-dispatch on
+	update-rc.d minard-cmos on
+	update-rc.d minard-base on
+	update-rc.d baseline_monitor on
 	service gunicorn restart
 
 .PHONY: install build docs

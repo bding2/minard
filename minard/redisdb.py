@@ -1,6 +1,6 @@
 from redis import Redis
 
-redis = Redis()
+redis = Redis(decode_responses=True)
 
 def add_run_to_db(key_index, run_dict):
     '''

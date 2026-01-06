@@ -1,5 +1,6 @@
 from .db import engine
 import datetime
+from sqlalchemy import text
 
 def get_radon_monitor(yr_low, mn_low, d_low, yr_high, mn_high, d_high):
     '''
@@ -7,11 +8,11 @@ def get_radon_monitor(yr_low, mn_low, d_low, yr_high, mn_high, d_high):
     '''
     conn = engine.connect()
 
-    result = conn.execute("SELECT po210_counts, po212_counts, po214_counts, po216_counts, "
+    result = conn.execute(text("SELECT po210_counts, po212_counts, po214_counts, po216_counts, "
                           "po218_counts, livetime, start_time FROM radon_monitor ORDER BY "
-                          "start_time ASC")
+                          "start_time ASC"))
 
-    keys = map(str, result.keys())
+    keys = list(map(str, result.keys()))
     rows = result.fetchall()
 
     # Range of selected dates

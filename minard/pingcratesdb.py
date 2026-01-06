@@ -1,5 +1,6 @@
 from .db import engine_nl
 from .detector_state import get_latest_run, get_mtc_state_for_run
+from sqlalchemy import text
 
 def ping_crates_list(limit, selected_run, run_range_low, run_range_high, gold):
     '''
@@ -11,22 +12,22 @@ def ping_crates_list(limit, selected_run, run_range_low, run_range_high, gold):
         # Get all ping crates information from the nearline database since (run - limit)
         latest_run = get_latest_run()
         run = latest_run - limit
-        result = conn.execute("SELECT DISTINCT ON (run) timestamp, run,  n100_crates_failed, "
+        result = conn.execute(text("SELECT DISTINCT ON (run) timestamp, run,  n100_crates_failed, "
                               "n20_crates_failed, n100_crates_warned, n20_crates_warned, "
-                              "status FROM ping_crates WHERE run > %s "
-                              "ORDER BY run, timestamp DESC", (run,))
+                              "status FROM ping_crates WHERE run > :run "
+                              "ORDER BY run, timestamp DESC"), {'run': run})
     elif run_range_high:
         # Get all ping crates information from the nearline database over run range
-        result = conn.execute("SELECT DISTINCT ON (run) timestamp, run,  n100_crates_failed, "
+        result = conn.execute(text("SELECT DISTINCT ON (run) timestamp, run,  n100_crates_failed, "
                               "n20_crates_failed, n100_crates_warned, n20_crates_warned, "
-                              "status FROM ping_crates WHERE run >= %s AND run <= %s "
-                              "ORDER BY run, timestamp DESC", (run_range_low, run_range_high))
+                              "status FROM ping_crates WHERE run >= :run_range_low AND run <= :run_range_high "
+                              "ORDER BY run, timestamp DESC"), {'run_range_low': run_range_low, 'run_range_high': run_range_high})
     else:
         # Get all ping crates information from the nearline database for a selected run
-        result = conn.execute("SELECT DISTINCT ON (run) timestamp, run,  n100_crates_failed, "
+        result = conn.execute(text("SELECT DISTINCT ON (run) timestamp, run,  n100_crates_failed, "
                               "n20_crates_failed, n100_crates_warned, n20_crates_warned, "
-                              "status FROM ping_crates WHERE run = %s "
-                              "ORDER BY run, timestamp DESC", (selected_run,))
+                              "status FROM ping_crates WHERE run = :selected_run "
+                              "ORDER BY run, timestamp DESC"), {'selected_run': selected_run})
 
 
     ping_info = []

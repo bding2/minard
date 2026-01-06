@@ -2,9 +2,9 @@ import couchdb
 import json
 import os
 import functools
-import ratdbloader
-import pca_flags
-import detectorviz
+from . import ratdbloader
+from . import pca_flags
+from . import detectorviz
 from . import app
 from .db import engine, engine_nl
 

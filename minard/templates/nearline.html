@@ -27,7 +27,7 @@
 			    <th>Log File</th>
 			</tr>
 		    </thead>
-		    {% for program, status in programs.iteritems() %}
+		    {% for program, status in programs.items() %}
 		    <tr>
 			{% if status|int == 1 %}
 			<th class="danger"> Failed </th>
