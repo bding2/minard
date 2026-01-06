@@ -2,10 +2,11 @@ from __future__ import print_function
 import sys
 from redis import Redis
 import bisect
-from redistools import maxcard, avgcard, maxcrate, avgcrate
+from .redistools import maxcard, avgcard, maxcrate, avgcrate
 from .db import engine
+from sqlalchemy import text
 
-redis = Redis()
+redis = Redis(decode_responses=True)
 
 # these are close to the optimal intervals for a 10 year timespan
 # Suppose you want to save Y seconds of data, with a minimum resolution
@@ -83,13 +84,13 @@ def get_cavity_temp(sensor, start, stop, step):
     """
     conn = engine.connect()
 
-    query = ("SELECT floor(extract(epoch from timestamp)/%s)::numeric::integer AS id, avg(temp) "
-             "FROM cavity_temp WHERE timestamp >= to_timestamp(%s) AND "
-             "timestamp <= to_timestamp(%s) "
-             "AND sensor = %s "
-             "GROUP BY floor(extract(epoch from timestamp)/%s)")
+    query = ("SELECT floor(extract(epoch from timestamp)/:step)::numeric::integer AS id, avg(temp) "
+             "FROM cavity_temp WHERE timestamp >= to_timestamp(:start) AND "
+             "timestamp <= to_timestamp(:stop) "
+             "AND sensor = :sensor "
+             "GROUP BY floor(extract(epoch from timestamp)/:step)")
 
-    result = conn.execute(query, (step, start, stop, sensor, step))
+    result = conn.execute(text(query), {'step': step, 'start': start, 'stop': stop, 'sensor': sensor})
 
     values = [None]*len(range(start,stop,step))
 
@@ -109,13 +110,13 @@ def get_psup_temp(sensor, start, stop, step):
     sensor = sensor + 30
     conn = engine.connect()
 
-    query = ("SELECT floor(extract(epoch from timestamp)/%s)::numeric::integer AS id, avg(temp) "
-             "FROM cavity_temp WHERE timestamp >= to_timestamp(%s) AND "
-             "timestamp <= to_timestamp(%s) "
-             "AND sensor = %s "
-             "GROUP BY floor(extract(epoch from timestamp)/%s)")
+    query = ("SELECT floor(extract(epoch from timestamp)/:step)::numeric::integer AS id, avg(temp) "
+             "FROM cavity_temp WHERE timestamp >= to_timestamp(:start) AND "
+             "timestamp <= to_timestamp(:stop) "
+             "AND sensor = :sensor "
+             "GROUP BY floor(extract(epoch from timestamp)/:step)")
 
-    result = conn.execute(query, (step, start, stop, sensor, step))
+    result = conn.execute(text(query), {'step': step, 'start': start, 'stop': stop, 'sensor': sensor})
     values = [None]*len(range(start,stop,step))
     rows = result.fetchall()
 

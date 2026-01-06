@@ -3,7 +3,7 @@ from PIL import Image
 import os
 import operator
 
-import pca_flags
+from . import pca_flags
 
 
 def color_add(color1, color2):
@@ -126,7 +126,7 @@ def image_for_run_mode_flag(scratch_dir, run, mode, flag, scale=6):
     image does not exist, create it.
     """
     if not os.path.exists(scratch_dir):
-        os.mkdir(scratch_dir, 0777)
+        os.mkdir(scratch_dir, 777)
 
     image_base = os.path.join(scratch_dir, run['name'])
     image_path = os.path.join(image_base,
@@ -134,7 +134,7 @@ def image_for_run_mode_flag(scratch_dir, run, mode, flag, scale=6):
 
     if not os.path.exists(image_path):
         if not os.path.exists(image_base):
-            os.mkdir(image_base, 0755)
+            os.mkdir(image_base, 755)
         generate_image(status_list_to_pixels(run['status'], flag),
                        image_path, scale=scale)
 

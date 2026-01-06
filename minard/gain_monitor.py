@@ -1,5 +1,6 @@
 from .db import engine_nl
 from .detector_state import get_latest_run
+from sqlalchemy import text
 
 def crate_gain_monitor(limit, selected_run, run_range_low, run_range_high, gold):
     """
@@ -10,18 +11,18 @@ def crate_gain_monitor(limit, selected_run, run_range_low, run_range_high, gold)
     if not selected_run and not run_range_high:
         latest_run = get_latest_run()
         run = latest_run - limit
-        result = conn.execute("SELECT DISTINCT ON (run, crate) "
+        result = conn.execute(text("SELECT DISTINCT ON (run, crate) "
             "run, crate, qhs_peak, qhs_peak_error FROM gain_monitor "
-            "WHERE run > %s ORDER BY run DESC", (run,))
+            "WHERE run > :run ORDER BY run DESC"), {'run': run})
     elif run_range_high:
-        result = conn.execute("SELECT DISTINCT ON (run, crate) "
+        result = conn.execute(text("SELECT DISTINCT ON (run, crate) "
             "run, crate, qhs_peak, qhs_peak_error FROM gain_monitor "
-            "WHERE run >= %s AND run <=%s ORDER BY run DESC", \
-            (run_range_low, run_range_high))
+            "WHERE run >= :run_range_low AND run <= :run_range_high ORDER BY run DESC"), \
+            {'run_range_low': run_range_low, 'run_range_high': run_range_high})
     else:
-        result = conn.execute("SELECT DISTINCT ON (run, crate) "
+        result = conn.execute(text("SELECT DISTINCT ON (run, crate) "
             "run, crate, qhs_peak, qhs_peak_error "
-            "FROM gain_monitor WHERE run = %s", (selected_run,))
+            "FROM gain_monitor WHERE run = :selected_run"), {'selected_run': selected_run})
 
     rows = result.fetchall()
 
@@ -56,9 +57,9 @@ def crate_average(selected_run, run_limit):
 
     SIGMA = 3
     run = selected_run - run_limit
-    result = conn.execute("SELECT DISTINCT ON (run, crate) "
+    result = conn.execute(text("SELECT DISTINCT ON (run, crate) "
         "run, crate, qhs_peak, qhs_peak_error FROM gain_monitor "
-        "WHERE run >= %s ORDER BY run DESC LIMIT 19*100", (run,))
+        "WHERE run >= :run ORDER BY run DESC LIMIT 19*100"), {'run': run})
 
     rows = result.fetchall()
 
@@ -101,10 +102,10 @@ def crate_gain_history(run_range_low, run_range_high, crate, qhs_low, qhs_max):
     """
     conn = engine_nl.connect()
 
-    result = conn.execute("SELECT DISTINCT ON (run, crate) "
-        "run, qhs_peak FROM gain_monitor WHERE run >= %s AND "
-        "run <= %s AND crate = %s ORDER BY run DESC ", \
-        (run_range_low, run_range_high, crate))
+    result = conn.execute(text("SELECT DISTINCT ON (run, crate) "
+        "run, qhs_peak FROM gain_monitor WHERE run >= :run_range_low AND "
+        "run <= :run_range_high AND crate = :crate ORDER BY run DESC "), \
+        {'run_range_low': run_range_low, 'run_range_high': run_range_high, 'crate': crate})
 
     rows = result.fetchall()
 

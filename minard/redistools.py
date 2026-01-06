@@ -1,7 +1,7 @@
 from redis import StrictRedis
 from itertools import chain
 
-redis = StrictRedis()
+redis = StrictRedis(decode_responses=True)
 
 HMINCRBY = """
 local f

@@ -1,5 +1,6 @@
 import sqlalchemy
 from .views import app
+from sqlalchemy import text
 
 engine = sqlalchemy.create_engine('postgresql://%s:%s@%s:%i/%s' %
                                  (app.config['DB_USER'], app.config['DB_PASS'],
@@ -13,7 +14,7 @@ def get_orca_session_logs(limit=100, offset=0):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM orca_sessions ORDER BY timestamp DESC LIMIT %s OFFSET %s", (limit,offset))
+    result = conn.execute(text("SELECT * FROM orca_sessions ORDER BY timestamp DESC LIMIT :limit OFFSET :offset"), {'limit': limit, 'offset': offset})
 
     if result is None:
         return None

@@ -81,10 +81,10 @@ def load_ratdb(file_path):
     Return the result of json.load on the given .ratdb file. They result
     should typically be a dict
     """
-    print file_path
+    print(file_path)
     with open(file_path, 'r') as input_file:
         try:
-            print 'Input File: ', input_file
+            print('Input File: ', input_file)
             return json.load(input_file)
             ###return FuzzyDict(json.load(input_file))
         except:
@@ -104,8 +104,8 @@ def load_run_directory(run_directory):
     dirfiles = lambda path: [dirent for dirent in os.listdir(path)
                              if os.path.isfile(os.path.join(path, dirent))]
     for i in dirfiles(run_directory):
-	if i.endswith(".ratdb"):
-	  print i
+        if i.endswith(".ratdb"):
+            print(i)
     data = FuzzyDict([(os.path.splitext(filename)[0],
                        load_ratdb(os.path.join(run_directory, filename)))
                       for filename in dirfiles(run_directory)

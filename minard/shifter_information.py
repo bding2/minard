@@ -1,9 +1,9 @@
 import psycopg2
 from .db import engine
 from .views import app
-from wtforms import Form, StringField, SelectField, validators
-from wtforms.fields.html5 import EmailField
+from wtforms import Form, StringField, SelectField, validators, EmailField
 from wtforms.validators import ValidationError
+from sqlalchemy import text
 
 VALID_COUNTRIES = [
     ('',''), # Optional empty choice
@@ -29,7 +29,7 @@ def get_experts():
     Returns a list of the names of all on-call experts.
     """
     conn = engine.connect()
-    result = conn.execute("SELECT firstname, lastname FROM experts")
+    result = conn.execute(text("SELECT firstname, lastname FROM experts"))
     row = result.fetchall()
     names = []
     for first, last in row:
@@ -43,7 +43,7 @@ def get_supernova_experts():
     Returns a list of the names of all on-call experts.
     """
     conn = engine.connect()
-    result = conn.execute("SELECT firstname, lastname FROM supernova_experts")
+    result = conn.execute(text("SELECT firstname, lastname FROM supernova_experts"))
     row = result.fetchall()
     names = []
     for first, last in row:
@@ -61,8 +61,8 @@ def get_shifter_information():
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT firstname, lastname, email, expert, supernova_expert "
-                          "FROM current_shifter_information")
+    result = conn.execute(text("SELECT firstname, lastname, email, expert, supernova_expert "
+                          "FROM current_shifter_information"))
 
     row = result.fetchone()
     if row is None:

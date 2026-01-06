@@ -1,4 +1,5 @@
 from .db import engine
+from sqlalchemy import text
 
 def get_deck_activity(limit=25, offset=0):
     '''
@@ -6,10 +7,10 @@ def get_deck_activity(limit=25, offset=0):
     '''
     conn = engine.connect()
 
-    result = conn.execute("SELECT checkintime, checkouttime, checkinrun, "
+    result = conn.execute(text("SELECT checkintime, checkouttime, checkinrun, "
                           "checkoutrun, firstname, lastname, reason, deck_lights, dcr_lights FROM logbook "
-                          "ORDER BY checkintime DESC LIMIT %s OFFSET %s", \
-                          (limit,offset))
+                          "ORDER BY checkintime DESC LIMIT :limit OFFSET :offset"), \
+                          {'limit': limit, 'offset': offset})
 
     if result is None:
         return None

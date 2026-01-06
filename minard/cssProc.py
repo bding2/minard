@@ -1,14 +1,15 @@
 from .db import engine_nl
+from sqlalchemy import text
 
 def getStandardRunList():
     conn = engine_nl.connect()
-    result = conn.execute("SELECT run_number FROM cssproc WHERE standard_run = %s ORDER BY run_number DESC",('t'))
+    result = conn.execute(text("SELECT run_number FROM cssproc WHERE standard_run = :standard_run ORDER BY run_number DESC"), {'standard_run': 't'})
     info = result.fetchall()
     return [i[0] for i in info]
 
 def pull_down_test_scores(run_number):
     conn = engine_nl.connect()
-    result = conn.execute("SELECT kstest_highocc,kstest_lowocc,chisqtest_highocc,chisqtest_lowocc FROM cssproc WHERE run_number = %s",(run_number))
+    result = conn.execute(text("SELECT kstest_highocc,kstest_lowocc,chisqtest_highocc,chisqtest_lowocc FROM cssproc WHERE run_number = :run_number"), {'run_number': run_number})
     info = result.fetchall()
     return info[0]
     

@@ -53,8 +53,8 @@ def cmos_consumer(host, port):
 
         log.debug("got data from crate %i" % crate)
 
-	if slotmask == 0:
-	    continue
+        if slotmask == 0:
+            continue
 
         cards = np.array([i for i in range(16) if (slotmask >> i) & 1])
         indices = (crate << 9 | cards[:,np.newaxis] << 5 | np.arange(32)).flatten()
@@ -118,14 +118,14 @@ if __name__ == '__main__':
         log.set_logfile(args.logfile)
 
     if args.daemonize:
-	daemonize()
+        daemonize()
 
     while True:
-	try:
-	    cmos_consumer(args.host,args.port)
-	except socket.error as e:
-	    log.warn('failed to connect to data: %s' % str(e))
-	    time.sleep(60)
-	except Exception as e:
-	    log.warn('unhandled exception: %s' % str(e))
-	    time.sleep(60)
+        try:
+            cmos_consumer(args.host,args.port)
+        except socket.error as e:
+            log.warn('failed to connect to data: %s' % str(e))
+            time.sleep(60)
+        except Exception as e:
+            log.warn('unhandled exception: %s' % str(e))
+            time.sleep(60)

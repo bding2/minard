@@ -3,6 +3,7 @@ from .db import engine
 from .views import app
 import psycopg2
 import psycopg2.extensions
+from sqlalchemy import text
 
 # This dictionary maps the label numbers on the OWL trigger signals to the
 # crate that they came from
@@ -11,7 +12,7 @@ OWL_LABELS = {1: 17, 2: 13, 3: 18, 4: 3}
 choices = [(19, "None")] + [(i, str(i+1)) for i in range(19)]
 
 owl_choices = [(-1, "None")]
-for label, crate in OWL_LABELS.iteritems():
+for label, crate in OWL_LABELS.items():
     owl_choices.append((crate, str(label)))
 
 RETRIGGER_LOGIC = {
@@ -130,7 +131,7 @@ def get_mtca_retriggers():
 
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM mtca_retriggers ORDER BY timestamp DESC LIMIT 1")
+    result = conn.execute(text("SELECT * FROM mtca_retriggers ORDER BY timestamp DESC LIMIT 1"))
 
     keys = result.keys()
     rows = result.fetchall()
@@ -142,7 +143,7 @@ def get_mtca_autoretriggers():
 
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM mtca_auto_retriggers ORDER BY timestamp DESC LIMIT 1")
+    result = conn.execute(text("SELECT * FROM mtca_auto_retriggers ORDER BY timestamp DESC LIMIT 1"))
 
     keys = result.keys()
     rows = result.fetchall()
@@ -157,8 +158,10 @@ def get_mtca_crate_mapping(mtca):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM current_mtca_crate_mapping WHERE mtca = %s",
-                          (mtca,))
+    result = conn.execute(
+        text("SELECT * FROM current_mtca_crate_mapping WHERE mtca = :mtca"),
+        {'mtca': mtca}
+    )
 
     if result is None:
         return None
@@ -230,8 +233,10 @@ def mtca_relay_status(mtca):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM mtca_relay_status WHERE mtca = %s "
-                          "ORDER BY timestamp DESC LIMIT 1" % (mtca,))
+    result = conn.execute(
+        text("SELECT * FROM mtca_relay_status WHERE mtca = :mtca ORDER BY timestamp DESC LIMIT 1"),
+        {"mtca": mtca}
+    )
 
     keys = result.keys()
     rows = result.fetchone()

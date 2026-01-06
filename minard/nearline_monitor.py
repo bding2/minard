@@ -1,3 +1,4 @@
+from sqlalchemy import text
 from .db import engine, engine_nl
 from .detector_state import get_latest_run
 from .pingcratesdb import ping_crates_list
@@ -116,7 +117,10 @@ def clock_jumps_run(run):
     clock_jumps_status = {}
     conn = engine_nl.connect()
 
-    result = conn.execute("SELECT run FROM trigger_clock_jumps WHERE run = %s", run)
+    result = conn.execute(
+        text("SELECT run FROM trigger_clock_jumps WHERE run = :run"),
+        {'run': run}
+    )
 
     # This should be the best way to check if the job ran for the given run
     try:
@@ -169,7 +173,10 @@ def channel_flags_run(run):
     channel_flags_status = {}
     conn = engine_nl.connect()
 
-    result = conn.execute("SELECT sync16 FROM channel_flags WHERE run = %s", run)
+    result = conn.execute(
+        text("SELECT sync16 FROM channel_flags WHERE run = :run"),
+        {'run': run}
+    )
 
     # This should be the best way to check if the job ran for the given run
     try:
@@ -229,7 +236,10 @@ def ping_crates_run(run):
     conn = engine_nl.connect()
 
     ping_crates_status = {}
-    result = conn.execute("SELECT status FROM ping_crates WHERE run = %i" % run)
+    result = conn.execute(
+        text("SELECT status FROM ping_crates WHERE run = :run"),
+        {'run': run}
+    )
     try:
         row = result.fetchone()[0]
         # Status is pass or override
@@ -279,19 +289,20 @@ def get_run_types(limit, selected_run, run_range_low, run_range_high, gold):
         # Nearline jobs run after run has finished
         latest_run = get_latest_run()
         # Don't look at the current run
-        result = conn.execute("SELECT DISTINCT ON (run) "
-                              "run, run_type FROM run_state WHERE "
-                              "run < %s and run > %s ORDER BY run DESC", \
-                              (latest_run, latest_run - limit))
+        result = conn.execute(
+            text("SELECT DISTINCT ON (run) run, run_type FROM run_state WHERE run < :latest_run and run > :min_run ORDER BY run DESC"),
+            {'latest_run': latest_run, 'min_run': latest_run - limit}
+        )
     elif run_range_high:
-        result = conn.execute("SELECT DISTINCT ON (run) "
-                              "run, run_type FROM run_state WHERE "
-                              "run >= %s AND run <= %s ORDER BY run DESC", \
-                              (run_range_low, run_range_high))
+        result = conn.execute(
+            text("SELECT DISTINCT ON (run) run, run_type FROM run_state WHERE run >= :run_range_low AND run <= :run_range_high ORDER BY run DESC"),
+            {'run_range_low': run_range_low, 'run_range_high': run_range_high}
+        )
     else:
-        result = conn.execute("SELECT DISTINCT ON (run) "
-                              "run, run_type FROM run_state WHERE "
-                              "run = %s" % selected_run)
+        result = conn.execute(
+            text("SELECT DISTINCT ON (run) run, run_type FROM run_state WHERE run = :selected_run"),
+            {'selected_run': selected_run}
+        )
 
     rows = result.fetchall()
 

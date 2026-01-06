@@ -9,7 +9,7 @@ import json
 from dateutil import parser
 import datetime
 from .views import app
-
+from sqlalchemy import text
 
 ############ FORM FUNCTIONS ############
 
@@ -66,7 +66,7 @@ def get_current_lists_run(run):
     c = False
     try:
         conn = engine.connect()
-        result = conn.execute("SELECT list FROM evaluated_runs WHERE run=%s" % (run,))
+        result = conn.execute(text("SELECT list FROM evaluated_runs WHERE run=%s" % (run,)))
         data =  [int(row[0]) for row in result.fetchall()]
     except:
         print('ERROR: Failed downloading current run lists')
@@ -81,7 +81,7 @@ def get_run_lists():
     c = False
     try:
         conn = engine.connect()
-        result = conn.execute("SELECT name, id FROM run_lists ORDER BY name ASC")
+        result = conn.execute(text("SELECT name, id FROM run_lists ORDER BY name ASC"))
         data = OrderedDict()
         for entry in result.fetchall():
             data[str(entry[0])] = int(entry[1])
@@ -103,7 +103,7 @@ def get_list_history(run):
     try:
         conn = engine.connect()
         c = True
-        result = conn.execute("SELECT timestamp, uploaded_to, removed_from, comment, name FROM rs_history WHERE run=%s ORDER BY timestamp DESC", (run,))
+        result = conn.execute(text("SELECT timestamp, uploaded_to, removed_from, comment, name FROM rs_history WHERE run=%s ORDER BY timestamp DESC", (run,)))
         data = OrderedDict()
         for i, entry in enumerate(result.fetchall()):
             data[str(i)] = {}
@@ -321,7 +321,7 @@ def get_RS_reports(criteria=None, run_min=None, run_max=None, limit=None):
     try:
         conn = engine_nl.connect()
         c = True
-        resultQuery = conn.execute(query)
+        resultQuery = conn.execute(text(query))
 
         rs_tables_list = []
         for row in resultQuery.fetchall():
@@ -516,7 +516,7 @@ def get_criteria_tables(runNum, crit_timestamp):
     query += ") ORDER BY timestamp DESC LIMIT 50"
 
     conn = engine_nl.connect()
-    resultQuery = conn.execute(query)
+    resultQuery = conn.execute(text(query))
 
     table_list = []
     for row in resultQuery.fetchall():
@@ -727,11 +727,11 @@ def get_neighbouring_runs(runNum):
         conn = engine_nl.connect()
         c = True
 
-        resultQuery_prev = conn.execute(query_prev)
+        resultQuery_prev = conn.execute(text(query_prev))
         for row in resultQuery_prev.fetchall():
             run_neighbours[0] = row[0]
             break
-        resultQuery_next = conn.execute(query_next)
+        resultQuery_next = conn.execute(text(query_next))
         for row in resultQuery_next.fetchall():
             run_neighbours[1] = row[0]
             break
@@ -866,7 +866,7 @@ def pass_fail_plot_info(criteria, date_range):
             data.append(rs_result)
         # get final run number and date of final run to check if more runs need to be downloaded
         len_rs_tables = len(rs_tables)
-        final_run_num = rs_tables.keys()[len_rs_tables-1]
+        final_run_num = list(rs_tables.keys())[len_rs_tables-1]
         last_run_start = rs_tables[final_run_num][criteria]['run_start'].split(' ')[0].split('-')
         min_dl_time = datetime.datetime(int(last_run_start[0]), int(last_run_start[1]), int(last_run_start[2]), 0, 0)
         attempt += 1
@@ -893,7 +893,7 @@ def get_RS_reports_date_range(criteria=None, run_max=None):
     try:
         conn = engine_nl.connect()
         c = True
-        resultQuery = conn.execute(query)
+        resultQuery = conn.execute(text(query))
         rs_tables_list = []
         for row in resultQuery.fetchall():
             tempt_dict = {}

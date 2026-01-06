@@ -8,7 +8,8 @@ engine = sqlalchemy.create_engine('postgresql://%s:%s@%s:%i/%s' %
                                   pool_recycle=3600)
 
 engine_nl = sqlalchemy.create_engine('postgresql://%s:%s@%s:%i/%s' %
-                                    (app.config['DB_USER'], app.config['DB_PASS'],
+                                    (app.config.get('DB_USER_NEARLINE', app.config['DB_USER']), 
+                                     app.config.get('DB_PASS_NEARLINE', app.config['DB_PASS']),
                                      app.config['DB_HOST_NEARLINE'], 
                                      app.config['DB_PORT_NEARLINE'],
                                      app.config['DB_NAME_NEARLINE']),

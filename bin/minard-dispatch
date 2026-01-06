@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from __future__ import print_function, division
 import time
 from redis import Redis
@@ -14,7 +14,7 @@ import os
 # Set up the logging
 log = Logger()
 
-redis = Redis()
+redis = Redis(decode_responses=True)
 
 # triggers, note: the order here is important!
 # the position of the trigger in the list corresponds to the bit in the
@@ -51,7 +51,7 @@ TRIGGER_NAMES = \
 
 def post(host):
     """Posts the dispatcher name to redis every 20 seconds."""
-    redis.setex('dispatcher',host,60)
+    redis.setex('dispatcher', 60, host)
     timer = threading.Timer(20.0, post, args=[host])
     timer.daemon = True
     timer.start()
@@ -80,7 +80,7 @@ def flush_cache(cache, cache_set, cache_nhit, cache_pmt, time):
         for name, hash in cache_set.items():
             key = 'ts:%i:%i:%s' % (interval, time//interval, name)
             if len(hash) > 0:
-                p.hmset(key, hash)
+                p.hset(key, mapping=hash)
                 p.expire(key, interval*EXPIRE)
 
     keys = ['ts:%i:%i:occupancy:hits' % (interval, time//interval)
@@ -107,7 +107,7 @@ def flush_cache(cache, cache_set, cache_nhit, cache_pmt, time):
             p.expire(prev_key, HASH_EXPIRE*interval)
             p.expire(prev_key + ':lock', interval)
 
-    for trigger, cache in cache_nhit.iteritems():
+    for trigger, cache in cache_nhit.items():
         if len(cache) > 0:
             # nhit distribution
             if len(cache) > 100:
@@ -155,7 +155,7 @@ def pull(host, num_workers, worker):
             p = redis.pipeline()
             for interval in INTERVALS:
                 key = 'ts:%i:%i:heartbeat' % (interval, then//interval)
-                p.setex(key,1,interval*EXPIRE)
+                p.setex(key, interval*EXPIRE, 1)
             p.execute()
 
             cache['trig'].clear()
@@ -300,16 +300,17 @@ if __name__ == '__main__':
         log.set_logfile(args.logfile)
 
     if args.daemonize:
-	daemonize()
-
+        daemonize()
+    
     if args.worker >= args.num_workers:
         log.warn("worker number must be less than the number of workers")
         sys.exit(1)
 
     while True:
-	try:
-	    pull(args.host, args.num_workers, args.worker)
-	except Exception as e:
-	    log.warn("unhandled exception: %s" % str(e))
+        try:
+            pull(args.host, args.num_workers, args.worker)
+        except Exception as e:
+            import traceback
+            log.warn("unhandled exception: %s\n%s" % (str(e), traceback.format_exc()))
             time.sleep(60)
-	    continue
+            continue

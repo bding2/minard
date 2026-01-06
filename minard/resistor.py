@@ -4,6 +4,7 @@ from wtforms import Form, DecimalField, validators, IntegerField, PasswordField,
 import psycopg2
 import psycopg2.extensions
 from .views import app
+from sqlalchemy import text
 
 V_BP_DROP = 10 # voltage drop across backplane
 R_PMT = 17100000 # resistance of PMT base
@@ -114,9 +115,10 @@ def get_resistor_values(crate, slot):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM pmtic_calc "
-        "WHERE crate = %s AND slot = %s",
-        (crate,slot))
+    result = conn.execute(
+        text("SELECT * FROM pmtic_calc WHERE crate = :crate AND slot = :slot"),
+        {'crate': crate, 'slot': slot}
+    )
 
     keys = result.keys()
     row = result.fetchone()
@@ -138,9 +140,15 @@ def get_hv_nominal(crate, slot):
     conn = engine.connect()
 
     if crate in (3,13,18) and slot == 15:
-        result = conn.execute("SELECT nominal FROM hvparams WHERE crate = %s AND supply = %s", (16, 'B'))
+        result = conn.execute(
+            text("SELECT nominal FROM hvparams WHERE crate = :crate AND supply = :supply"), 
+            {'crate': 16, 'supply': 'B'}
+        )
     else:
-        result = conn.execute("SELECT nominal FROM hvparams WHERE crate = %s AND supply = %s", (crate, 'A'))
+        result = conn.execute(
+            text("SELECT nominal FROM hvparams WHERE crate = :crate AND supply = :supply"),
+            {'crate': crate, 'supply': 'A'}
+        )
 
     return result.fetchone()[0]
 
@@ -155,11 +163,17 @@ def get_resistors(crate, slot):
 
     nominal_hv = get_hv_nominal(crate, slot)
 
-    result = conn.execute("SELECT voltage_drop FROM hv_backplane WHERE crate = %s AND supply = %s", (crate, resistors['supply']))
+    result = conn.execute(
+        text("SELECT voltage_drop FROM hv_backplane WHERE crate = :crate AND supply = :supply"),
+        {'crate': crate, 'supply': resistors['supply']}
+    )
 
     voltage_drop = result.fetchone()[0]
 
-    result = conn.execute("SELECT channel, hv FROM pmt_info WHERE crate = %s AND slot = %s ORDER BY channel", (crate, slot))
+    result = conn.execute(
+        text("SELECT channel, hv FROM pmt_info WHERE crate = :crate AND slot = :slot ORDER BY channel"),
+        {'crate': crate, 'slot': slot}
+    )
 
     keys = result.keys()
     rows = result.fetchall()

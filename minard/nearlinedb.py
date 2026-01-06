@@ -1,3 +1,4 @@
+from sqlalchemy import text
 from .db import engine_nl
 
 def get_nearline_status(run):
@@ -7,8 +8,10 @@ def get_nearline_status(run):
     """
     conn = engine_nl.connect()
 
-    result = conn.execute("SELECT name, status FROM nearline WHERE run = %s "
-                          "ORDER BY timestamp ASC", run)
+    result = conn.execute(
+        text("SELECT name, status FROM nearline WHERE run = :run ORDER BY timestamp ASC"),
+        {'run': run}
+    )
 
     rows = result.fetchall()
 
@@ -24,7 +27,7 @@ def current_run():
     """
     conn = engine_nl.connect()
 
-    result = conn.execute("SELECT run from current_nearline_run")
+    result = conn.execute(text("SELECT run from current_nearline_run"))
     run = result.fetchone()[0]
 
     return run
@@ -35,8 +38,7 @@ def job_types():
     """
     conn = engine_nl.connect()
 
-    result = conn.execute("SELECT DISTINCT name FROM nearline "
-                          "ORDER BY name DESC")
+    result = conn.execute(text("SELECT DISTINCT name FROM nearline ORDER BY name DESC"))
     rows = result.fetchall()
 
     names = ["All", "Critical"]
@@ -51,13 +53,15 @@ def get_failed_runs(run, run_range_low=0, run_range_high=0):
     conn = engine_nl.connect()
 
     if run_range_high:
-        result = conn.execute("SELECT DISTINCT ON (run, name) run, name, status FROM nearline "
-                              "WHERE run >= %s AND run <= %s ORDER BY run DESC, name DESC, timestamp DESC",
-                              (run_range_low, run_range_high,))
+        result = conn.execute(
+            text("SELECT DISTINCT ON (run, name) run, name, status FROM nearline WHERE run >= :run_range_low AND run <= :run_range_high ORDER BY run DESC, name DESC, timestamp DESC"),
+            {'run_range_low': run_range_low, 'run_range_high': run_range_high}
+        )
     else:
-        result = conn.execute("SELECT DISTINCT ON (run, name) run, name, status FROM "
-                              "nearline WHERE run >= %s ORDER BY run DESC, name DESC, timestamp DESC",
-                              (run,))
+        result = conn.execute(
+            text("SELECT DISTINCT ON (run, name) run, name, status FROM nearline WHERE run >= :run ORDER BY run DESC, name DESC, timestamp DESC"),
+            {'run': run}
+        )
     rows = result.fetchall()
 
     # Keep track of runs that returned a failure code
@@ -81,8 +85,7 @@ def reprocessed_runs():
     """
     conn = engine_nl.connect()
 
-    result = conn.execute("SELECT DISTINCT ON (run) run FROM reprocessed_run "
-                          "ORDER BY run DESC")
+    result = conn.execute(text("SELECT DISTINCT ON (run) run FROM reprocessed_run ORDER BY run DESC"))
 
     rows = result.fetchall()
 
@@ -96,7 +99,10 @@ def reprocessed_run(run):
     """
     conn = engine_nl.connect()
 
-    result = conn.execute("SELECT run FROM reprocessed_run WHERE run = %s", (run,))
+    result = conn.execute(
+        text("SELECT run FROM reprocessed_run WHERE run = :run"),
+        {'run': run}
+    )
 
     rows = result.fetchone()
 

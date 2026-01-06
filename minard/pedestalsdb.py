@@ -1,4 +1,5 @@
 from .db import engine
+from sqlalchemy import text
 
 def get_pedestals(crate, slot, channel):
     '''
@@ -6,10 +7,10 @@ def get_pedestals(crate, slot, channel):
     '''
     conn = engine.connect()
 
-    result = conn.execute("SELECT DISTINCT ON (crate, slot, channel, cell) "
-        "qhs_avg, qhl_avg, qlx_avg FROM pedestals WHERE "
-        "crate = %s AND slot = %s AND channel = %s ORDER "
-        "BY crate, slot, channel, cell, timestamp DESC", (crate, slot, channel))
+    result = conn.execute(
+        text("SELECT DISTINCT ON (crate, slot, channel, cell) qhs_avg, qhl_avg, qlx_avg FROM pedestals WHERE crate = :crate AND slot = :slot AND channel = :channel ORDER BY crate, slot, channel, cell, timestamp DESC"), 
+        {'crate': crate, 'slot': slot, 'channel': channel}
+    )
 
     rows = result.fetchall()
 
@@ -29,9 +30,10 @@ def qhs_by_channel(crate, slot, channel, cell):
     '''
     conn = engine.connect()
 
-    result = conn.execute("SELECT DISTINCT ON (crate, slot, channel, cell) "
-        "qhs, slot, channel, cell FROM pedestals WHERE crate = %s  "
-        "ORDER BY crate, slot, channel, cell, timestamp DESC", (crate,))
+    result = conn.execute(
+        text("SELECT DISTINCT ON (crate, slot, channel, cell) qhs, slot, channel, cell FROM pedestals WHERE crate = :crate  ORDER BY crate, slot, channel, cell, timestamp DESC"), 
+        {'crate': crate}
+    )
 
     rows = result.fetchall()
 
@@ -54,10 +56,12 @@ def bad_pedestals(crate, slot, channel, cell, charge_type, qmax, qmin, limit):
     '''
     conn = engine.connect()
 
-    result = conn.execute("SELECT DISTINCT ON (crate, slot, channel, cell) "
+    query = ("SELECT DISTINCT ON (crate, slot, channel, cell) "
         "crate, slot, channel, cell, qhs_avg, qhl_avg, qlx_avg, num_events FROM pedestals "
-        "WHERE (%s > %d OR %s < %d) AND crate = %d ORDER BY crate, slot, channel, cell, "
-        "timestamp DESC LIMIT %d" % (charge_type, qmax, charge_type, qmin, crate, limit))
+        "WHERE (%s > %d OR %s < %d) AND crate = :crate ORDER BY crate, slot, channel, cell, "
+        "timestamp DESC LIMIT %d" % (charge_type, qmax, charge_type, qmin, limit))
+    
+    result = conn.execute(text(query), {'crate': crate})
 
     rows = result.fetchall()
 

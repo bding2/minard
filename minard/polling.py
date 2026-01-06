@@ -1,5 +1,6 @@
 from .db import engine 
-import detector_state
+from . import detector_state
+from sqlalchemy import text
 
 # PMT Type defines
 PMT_TYPES = {
@@ -44,16 +45,20 @@ def polling_runs(limit=100):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT DISTINCT ON (run) run FROM cmos "
-        "ORDER BY run DESC LIMIT %s", (limit,))
+    result = conn.execute(
+        text("SELECT DISTINCT ON (run) run FROM cmos ORDER BY run DESC LIMIT :limit"),
+        {'limit': limit}
+    )
 
     if result is not None:
         keys = result.keys()
         rows = result.fetchall()
         cmos_runs = [dict(zip(keys,row)) for row in rows]
 
-    result = conn.execute("SELECT DISTINCT ON (run) run FROM base "
-        "ORDER BY run DESC LIMIT %s", (limit,))
+    result = conn.execute(
+        text("SELECT DISTINCT ON (run) run FROM base ORDER BY run DESC LIMIT :limit"),
+        {'limit': limit}
+    )
 
     if result is not None:
         keys = result.keys()
@@ -73,9 +78,10 @@ def get_most_recent_polling_info(crate, slot, channel):
     conn = engine.connect()
 
     # Get the latest cmos rates
-    result = conn.execute("SELECT * FROM cmos WHERE crate = %s "
-        "AND slot = %s AND channel = %s ORDER BY run DESC LIMIT 1",
-        (crate, slot, channel))
+    result = conn.execute(
+        text("SELECT * FROM cmos WHERE crate = :crate AND slot = :slot AND channel = :channel ORDER BY run DESC LIMIT 1"),
+        {'crate': crate, 'slot': slot, 'channel': channel}
+    )
 
     if result is None:
         return None, None
@@ -88,9 +94,10 @@ def get_most_recent_polling_info(crate, slot, channel):
         polls.update(cmos)
 
     # Get the latest base currents
-    result = conn.execute("SELECT * FROM base WHERE crate = %s "
-        "AND slot = %s AND channel = %s ORDER BY run DESC LIMIT 1",
-        (crate, slot, channel))
+    result = conn.execute(
+        text("SELECT * FROM base WHERE crate = :crate AND slot = :slot AND channel = :channel ORDER BY run DESC LIMIT 1"),
+        {'crate': crate, 'slot': slot, 'channel': channel}
+    )
 
     if result is None:
         return None, None
@@ -114,15 +121,15 @@ def get_base_current_history(crate, slot, channel, min_run, max_run):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT timestamp, base_current FROM base "
-                          "WHERE crate = %s AND slot = %s AND channel = %s "
-                          "AND run > %s AND run < %s ORDER BY timestamp DESC, "
-                          "run DESC", (crate, slot, channel, min_run, max_run))
+    result = conn.execute(
+        text("SELECT timestamp, base_current FROM base WHERE crate = :crate AND slot = :slot AND channel = :channel AND run > :min_run AND run < :max_run ORDER BY timestamp DESC, run DESC"), 
+        {'crate': crate, 'slot': slot, 'channel': channel, 'min_run': min_run, 'max_run': max_run}
+    )
 
     if result is None:
         return None
 
-    keys = map(str,result.keys())
+    keys = list(map(str,result.keys()))
     rows = result.fetchall()
 
     return [dict(zip(keys,row)) for row in rows]
@@ -137,15 +144,15 @@ def get_cmos_rate_history(crate, slot, channel, min_run, max_run):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT timestamp, cmos_rate FROM cmos "
-                          "WHERE crate = %s AND slot = %s AND channel = %s "
-                          "AND run > %s AND run < %s ORDER BY timestamp DESC, "
-                          "run DESC", (crate, slot, channel, min_run, max_run))
+    result = conn.execute(
+        text("SELECT timestamp, cmos_rate FROM cmos WHERE crate = :crate AND slot = :slot AND channel = :channel AND run > :min_run AND run < :max_run ORDER BY timestamp DESC, run DESC"), 
+        {'crate': crate, 'slot': slot, 'channel': channel, 'min_run': min_run, 'max_run': max_run}
+    )
 
     if result is None:
         return None
 
-    keys = map(str,result.keys())
+    keys = list(map(str,result.keys()))
     rows = result.fetchall()
 
     return [dict(zip(keys,row)) for row in rows]
@@ -163,9 +170,9 @@ def polling_info(data_type, run_number):
     # Default load the most recent run
     if run_number == 0:
         if data_type == "cmos":
-            result = conn.execute("SELECT run FROM cmos ORDER BY run DESC LIMIT 1")
+            result = conn.execute(text("SELECT run FROM cmos ORDER BY run DESC LIMIT 1"))
         elif data_type == "base":
-            result = conn.execute("SELECT run FROM base ORDER BY run DESC LIMIT 1")
+            result = conn.execute(text("SELECT run FROM base ORDER BY run DESC LIMIT 1"))
         else:
             return None
 
@@ -178,13 +185,15 @@ def polling_info(data_type, run_number):
             run_number = run
 
     if data_type == "cmos":
-        result = conn.execute("SELECT DISTINCT ON (run, crate, slot, channel) "
-            "crate, slot, channel, cmos_rate FROM cmos WHERE run = %s "
-            "ORDER BY run, crate, slot, channel", (run_number,))
+        result = conn.execute(
+            text("SELECT DISTINCT ON (run, crate, slot, channel) crate, slot, channel, cmos_rate FROM cmos WHERE run = :run_number ORDER BY run, crate, slot, channel"), 
+            {'run_number': run_number}
+        )
     elif data_type == "base":
-        result = conn.execute("SELECT DISTINCT ON (run, crate, slot, channel) "
-            "crate, slot, channel, base_current FROM base WHERE run = %s "
-            "ORDER BY run, crate, slot, channel", (run_number,))
+        result = conn.execute(
+            text("SELECT DISTINCT ON (run, crate, slot, channel) crate, slot, channel, base_current FROM base WHERE run = :run_number ORDER BY run, crate, slot, channel"),
+            {'run_number': run_number}
+        )
     else:
         return None
 
@@ -214,14 +223,14 @@ def polling_summary(run):
     if run == 0 or run > current_run:
        run = current_run
 
-    result = conn.execute("SELECT run FROM cmos WHERE run <= %s ORDER BY run DESC LIMIT 1", run)
+    result = conn.execute(text("SELECT run FROM cmos WHERE run <= :run ORDER BY run DESC LIMIT 1"), {'run': run})
     try:
         crun = result.fetchone()[0]
     except TypeError:
         messages.append("No polling data available for run %i" % run)
         return 0, 0, 0, messages
 
-    result = conn.execute("SELECT run FROM base where run <= %s ORDER BY run DESC LIMIT 1", run)
+    result = conn.execute(text("SELECT run FROM base where run <= :run ORDER BY run DESC LIMIT 1"), {'run': run})
     try:
         brun = result.fetchone()[0]
     except TypeError:
@@ -246,9 +255,10 @@ def polling_summary(run):
     crates_cmos[20] = 4 # Default number of HQEs
     crates_base[20] = 4
 
-    result = conn.execute("SELECT DISTINCT ON (crate, slot, channel) "
-        "cmos_rate, crate, slot, channel FROM cmos WHERE run = %s "
-        "ORDER BY crate, slot, channel, timestamp DESC", (crun,))
+    result = conn.execute(
+        text("SELECT DISTINCT ON (crate, slot, channel) cmos_rate, crate, slot, channel FROM cmos WHERE run = :crun ORDER BY crate, slot, channel, timestamp DESC"),
+        {'crun': crun}
+    )
     if result is None:
         messages.append("Polling query failed for cmos rates, run %i" % crun)
         return 0, 0, 0, messages
@@ -286,9 +296,10 @@ def polling_summary(run):
         else:
             crates_cmos[crate]-=1
 
-    result = conn.execute("SELECT DISTINCT ON (crate, slot, channel) "
-        "base_current, crate, slot, channel FROM base WHERE run = %s "
-        "ORDER BY crate, slot, channel, timestamp DESC", (brun,))
+    result = conn.execute(
+        text("SELECT DISTINCT ON (crate, slot, channel) base_current, crate, slot, channel FROM base WHERE run = :brun ORDER BY crate, slot, channel, timestamp DESC"), 
+        {'brun': brun}
+    )
 
     if result is None:
         messages.append("Polling query failed for base currents, run %i" % brun)
@@ -354,8 +365,7 @@ def polling_check(high_rate, low_rate, pct_change):
     run_number = []
 
     # Get the two most recent runs with valid cmos data
-    result = conn.execute("SELECT DISTINCT ON (run) run FROM cmos "
-        "ORDER BY run DESC LIMIT 2")
+    result = conn.execute(text("SELECT DISTINCT ON (run) run FROM cmos ORDER BY run DESC LIMIT 2"))
 
     rows = result.fetchall()
     for run in rows:
@@ -365,8 +375,10 @@ def polling_check(high_rate, low_rate, pct_change):
     data_run2 = [0]*9728
 
     # Get the cmos data from the two most recent runs with valid data
-    result = conn.execute("SELECT crate, slot, channel, cmos_rate, run FROM cmos WHERE "
-        "run = %s or run = %s", (run_number[0], run_number[1]))
+    result = conn.execute(
+        text("SELECT crate, slot, channel, cmos_rate, run FROM cmos WHERE run = :run1 or run = :run2"), 
+        {'run1': run_number[0], 'run2': run_number[1]}
+    )
 
     rows = result.fetchall()
     for crate, slot, channel, cmos_rate, run in rows:
@@ -380,8 +392,7 @@ def polling_check(high_rate, low_rate, pct_change):
     threshold = [0]*9728
 
     # Get the discriminator thresholds
-    result = conn.execute("SELECT crate, slot, zero_disc FROM current_zdisc "
-        "ORDER BY crate, slot")
+    result = conn.execute(text("SELECT crate, slot, zero_disc FROM current_zdisc ORDER BY crate, slot"))
 
     rows = result.fetchall()
 
@@ -391,8 +402,7 @@ def polling_check(high_rate, low_rate, pct_change):
             zero_threshold[lcn] = zero[i]
 
     # Get the discriminator zeros
-    result = conn.execute("SELECT crate, slot, vthr FROM current_detector_state "
-        "ORDER BY crate, slot")
+    result = conn.execute(text("SELECT crate, slot, vthr FROM current_detector_state ORDER BY crate, slot"))
 
     rows = result.fetchall()
 
@@ -480,8 +490,7 @@ def pmt_type(conn):
     Get the PMT types
     """
     types = [0]*9728
-    sql_result = conn.execute("SELECT crate, slot, channel, type FROM pmt_info "
-        "ORDER BY crate, slot, channel")
+    sql_result = conn.execute(text("SELECT crate, slot, channel, type FROM pmt_info ORDER BY crate, slot, channel"))
 
     sql_result = sql_result.fetchall()
     for crate, slot, channel, pmttype in sql_result:
@@ -497,9 +506,7 @@ def channel_information(conn):
     """
 
     channel_info = [0]*9728
-    sql_result = conn.execute("SELECT crate, slot, channel, resistor_pulled, "
-        "zero_occupancy, low_occupancy, bad_discriminator FROM current_channel_status "
-        "ORDER BY crate, slot, channel")
+    sql_result = conn.execute(text("SELECT crate, slot, channel, resistor_pulled, zero_occupancy, low_occupancy, bad_discriminator FROM current_channel_status ORDER BY crate, slot, channel"))
 
     sql_result = sql_result.fetchall()
     for crate, slot, channel, rpulled, low_occ, zero_occ, bad_disc in sql_result:
@@ -514,8 +521,10 @@ def relay_status(conn, run):
     Returns the hv relay masks
     """
     relays = []
-    result = conn.execute("SELECT crate, hv_relay_mask1, hv_relay_mask2 FROM "
-        "crate_state where run = %s ORDER BY crate", run)
+    result = conn.execute(
+        text("SELECT crate, hv_relay_mask1, hv_relay_mask2 FROM crate_state where run = :run ORDER BY crate"), 
+        {'run': run}
+    )
 
     rows = result.fetchall()
 
@@ -539,9 +548,9 @@ def polling_info_card(data_type, run_number, crate):
     # Default load the most recent run
     if run_number == 0:
         if data_type == "cmos":
-            result = conn.execute("SELECT run FROM cmos ORDER BY run DESC LIMIT 1")
+            result = conn.execute(text("SELECT run FROM cmos ORDER BY run DESC LIMIT 1"))
         elif data_type == "base":
-            result = conn.execute("SELECT run FROM base ORDER BY run DESC LIMIT 1")
+            result = conn.execute(text("SELECT run FROM base ORDER BY run DESC LIMIT 1"))
         else:
             return None
 
@@ -554,13 +563,15 @@ def polling_info_card(data_type, run_number, crate):
             run_number = run
 
     if data_type == "cmos":
-        result = conn.execute("SELECT DISTINCT ON (run, crate, slot, channel) "
-            "slot, channel, cmos_rate FROM cmos WHERE run = %s "
-            "AND crate = %s ORDER by run, slot, channel", (run_number, crate))
+        result = conn.execute(
+            text("SELECT DISTINCT ON (run, crate, slot, channel) slot, channel, cmos_rate FROM cmos WHERE run = :run_number AND crate = :crate ORDER by run, slot, channel"),
+            {'run_number': run_number, 'crate': crate}
+        )
     elif data_type == "base":
-        result = conn.execute("SELECT DISTINCT ON (run, crate, slot, channel) "
-            "slot, channel, base_current FROM base WHERE run = %s "
-            "AND crate = %s ORDER by run, slot, channel", (run_number, crate))
+        result = conn.execute(
+            text("SELECT DISTINCT ON (run, crate, slot, channel) slot, channel, base_current FROM base WHERE run = :run_number AND crate = :crate ORDER by run, slot, channel"),
+            {'run_number': run_number, 'crate': crate} 
+        )
     else:
         return None
 
@@ -581,8 +592,12 @@ def get_vmon(crate, slot):
 
     voltages = ", ".join(key for key in voltages_str_dict)
 
-    result = conn.execute("SELECT %s FROM current_vmon WHERE crate = %%s "
-        "AND slot = %%s" % voltages, crate, slot)
+    query = "SELECT " + voltages + " FROM current_vmon WHERE crate = :crate AND slot = :slot"
+
+    result = conn.execute(
+        text(query),
+        {'crate': crate, 'slot': slot}
+    )
 
     keys = result.keys()
     rows = result.fetchone()
@@ -591,17 +606,17 @@ def get_vmon(crate, slot):
         return None, None
 
     bad_voltages = {}
-    result = dict(zip(keys,rows))
-    for key in result.keys():
-        value = result[key]
+    result_dict = dict(zip(keys,rows))
+    result = {}
+    for key in result_dict.keys():
+        value = result_dict[key]
         nominal_value = voltages_str_dict[key][1]
         new_key = voltages_str_dict[key][0] 
-        result[new_key] = result.pop(key)
-        if abs(value) < abs(nominal_value)*(1 - VMON_THRESH) or \
-           abs(value) > abs(nominal_value)*(1 + VMON_THRESH):
+        result[new_key] = value
+        if abs(value) < abs(nominal_value)*(1 - VMON_THRESH) or abs(value) > abs(nominal_value)*(1 + VMON_THRESH):
             bad_voltages[new_key] = 1
         else:
-            bad_voltages[new_key] = 0 
+            bad_voltages[new_key] = 0
 
     return result, bad_voltages
 
@@ -612,11 +627,14 @@ def get_vmon_history(crate, slot):
     conn = engine.connect()
 
     voltages = ", ".join(key for key in voltages_str_dict)
-    query = "to_char(timestamp, 'Mon DD YYYY HH12:MI:SS'), "
+    query = "SELECT to_char(timestamp, 'Mon DD YYYY HH12:MI:SS'), "
     query += voltages
+    query += " FROM vmon WHERE crate = :crate AND slot = :slot ORDER BY timestamp DESC"
 
-    result = conn.execute("SELECT %s FROM vmon WHERE crate = %%s "
-        "AND slot = %%s ORDER BY timestamp DESC" % query, crate, slot)
+    result = conn.execute(
+        text(query),
+        {'crate': crate, 'slot': slot}
+    )
 
     keys = result.keys()
     rows = result.fetchall()

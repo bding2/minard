@@ -3,6 +3,7 @@ from .db import engine
 from .views import app
 import psycopg2
 import psycopg2.extensions
+from sqlalchemy import text
 
 class ChannelStatusForm(Form):
     """
@@ -77,13 +78,13 @@ def get_fec_db_history(crate, card, channel):
                 "IS DISTINCT FROM mbid AS fec_changed, "
             "lag(dbid[%i]) OVER (ORDER BY run ASC) "
                 "IS DISTINCT FROM dbid[%i] AS db_changed "
-            "FROM detector_state WHERE crate = %%(crate)s AND "
-            "slot = %%(card)s AND mbid IS NOT NULL AND dbid IS NOT NULL AND "
+            "FROM detector_state WHERE crate = :crate AND "
+            "slot = :card AND mbid IS NOT NULL AND dbid IS NOT NULL AND "
             "run > 0) sub WHERE fec_changed OR db_changed"
         ") _ NATURAL JOIN run_state ORDER BY run" % \
         (channel//8+1, channel//8+1, channel//8+1))
 
-    result = conn.execute(query, crate=crate, card=card)
+    result = conn.execute(text(query), {'crate': crate, 'card': card})
 
     keys = result.keys()
     rows = result.fetchall()
@@ -121,7 +122,7 @@ def get_channels(kwargs, limit=100, sort_by=None):
     else:
         query += "ORDER BY crate, slot, channel LIMIT %i" % limit
 
-    result = conn.execute(query, kwargs)
+    result = conn.execute(text(query), kwargs)
 
     if result is None:
         return None
@@ -138,14 +139,12 @@ def get_channel_history(crate, slot, channel, limit=None):
     """
     conn = engine.connect()
 
-    query = "SELECT * FROM channel_status " + \
-        "WHERE crate = %s AND slot = %s AND channel = %s " + \
-        "ORDER BY timestamp DESC"
+    query = "SELECT * FROM channel_status WHERE crate = :crate AND slot = :slot AND channel = :channel ORDER BY timestamp DESC"
 
     if limit is not None:
         query += " LIMIT %i" % limit
 
-    result = conn.execute(query, (crate,slot,channel))
+    result = conn.execute(text(query), {'crate': crate, 'slot': slot, 'channel': channel})
 
     if result is None:
         return None
@@ -161,9 +160,10 @@ def get_pmt_info(crate, slot, channel):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM pmt_info "
-        "WHERE crate = %s AND slot = %s AND channel = %s",
-        (crate, slot, channel))
+    result = conn.execute(
+        text("SELECT * FROM pmt_info WHERE crate = :crate AND slot = :slot AND channel = :channel"),
+        {'crate': crate, 'slot': slot, 'channel': channel}
+    )
 
     if result is None:
         return None
@@ -182,7 +182,7 @@ def get_pmt_types():
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT crate, slot, channel, type FROM pmt_info")
+    result = conn.execute(text("SELECT crate, slot, channel, type FROM pmt_info"))
 
     if result is None:
         return None
@@ -209,13 +209,12 @@ def get_nominal_settings_for_run(run=0):
 
     if run == 0:
         # current nominal settings
-        result = conn.execute("SELECT crate, slot, channel, n100, n20, "
-            "sequencer FROM current_nominal_settings")
+        result = conn.execute(text("SELECT crate, slot, channel, n100, n20, sequencer FROM current_nominal_settings"))
     else:
-        result = conn.execute("SELECT DISTINCT ON (crate, slot, channel) "
-            "crate, slot, channel, n100, n20, sequencer FROM nominal_settings "
-            "WHERE timestamp < (SELECT timestamp FROM run_state WHERE run = %s) "
-            "ORDER BY crate, slot, channel, timestamp DESC", (run,))
+        result = conn.execute(
+            text("SELECT DISTINCT ON (crate, slot, channel) crate, slot, channel, n100, n20, sequencer FROM nominal_settings WHERE timestamp < (SELECT timestamp FROM run_state WHERE run = :run) ORDER BY crate, slot, channel, timestamp DESC"),
+            {'run': run}
+        )
 
     if result is None:
         return None
@@ -241,9 +240,10 @@ def get_nominal_settings(crate, slot, channel):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM current_nominal_settings "
-        "WHERE crate = %s AND slot = %s AND channel = %s",
-        (crate,slot,channel))
+    result = conn.execute(
+        text("SELECT * FROM current_nominal_settings WHERE crate = :crate AND slot = :slot AND channel = :channel"),
+        {'crate': crate, 'slot': slot, 'channel': channel}
+    )
 
     if result is None:
         return None
@@ -261,8 +261,10 @@ def get_discriminator_threshold(crate, slot):
     conn = engine.connect()
 
     # Select most recent zdisc with ecalid field
-    result = conn.execute("SELECT zero_disc FROM current_zdisc WHERE "
-        "crate = %s AND slot = %s", (crate, slot))
+    result = conn.execute(
+        text("SELECT zero_disc FROM current_zdisc WHERE crate = :crate AND slot = :slot"), 
+        {'crate': crate, 'slot': slot}
+    )
 
     if result is None:
         return None
@@ -276,8 +278,10 @@ def get_discriminator_threshold(crate, slot):
     zthr = dict(zip(keys,row))
 
     # Get the current discriminator threshold
-    result = conn.execute("SELECT vthr FROM current_detector_state WHERE "
-        "crate = %s AND slot = %s", (crate, slot))
+    result = conn.execute(
+        text("SELECT vthr FROM current_detector_state WHERE crate = :crate AND slot = :slot"), 
+        {'crate': crate, 'slot': slot}
+    )
 
     if result is None:
         return None
@@ -286,8 +290,10 @@ def get_discriminator_threshold(crate, slot):
     row = result.fetchone()
 
     if row is None:
-        result = conn.execute("SELECT vthr FROM detector_state WHERE "
-            "crate = %s AND slot = %s ORDER BY run DESC LIMIT 1", (crate, slot))
+        result = conn.execute(
+            text("SELECT vthr FROM detector_state WHERE crate = :crate AND slot = :slot ORDER BY run DESC LIMIT 1"),
+            {'crate': crate, 'slot': slot}
+        )
         keys = result.keys()
         row = result.fetchone()
 
@@ -296,8 +302,10 @@ def get_discriminator_threshold(crate, slot):
     threshold = zthr.copy()
     threshold.update(vthr)
 
-    result = conn.execute("SELECT vthr FROM fecdoc WHERE crate = %s AND slot = %s "
-        "ORDER BY timestamp DESC LIMIT 1", (crate, slot))
+    result = conn.execute(
+        text("SELECT vthr FROM fecdoc WHERE crate = :crate AND slot = :slot ORDER BY timestamp DESC LIMIT 1"),
+        {'crate': crate, 'slot': slot}
+    )
 
     rows = result.fetchone()
 
@@ -317,8 +325,10 @@ def get_gtvalid_lengths(crate, slot):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT gtvalid0_length, gtvalid1_length FROM gtvalid "
-        "WHERE crate = %s AND slot = %s ORDER BY timestamp DESC LIMIT 1", (crate, slot))
+    result = conn.execute(
+        text("SELECT gtvalid0_length, gtvalid1_length FROM gtvalid WHERE crate = :crate AND slot = :slot ORDER BY timestamp DESC LIMIT 1"),
+        {'crate': crate, 'slot': slot}
+    )
 
     if result is None:
         return None
@@ -351,11 +361,12 @@ def get_all_thresholds(run):
     disc = [9999]*9728
 
     if run == 0:
-        result = conn.execute("SELECT crate, slot, vthr FROM current_detector_state "
-                              "ORDER BY crate, slot")
+        result = conn.execute(text("SELECT crate, slot, vthr FROM current_detector_state ORDER BY crate, slot"))
     else:
-        result = conn.execute("SELECT crate, slot, vthr FROM detector_state WHERE "
-                              "run = %s ORDER BY crate, slot", run)
+        result = conn.execute(
+            text("SELECT crate, slot, vthr FROM detector_state WHERE run = :run ORDER BY crate, slot"), 
+            {'run': run}
+        )
 
     rows = result.fetchall()
 
@@ -371,11 +382,10 @@ def get_all_thresholds(run):
 
     # Select the ZDISC information with the timestamp before the requested
     # VTHR information.
-    result = conn.execute("SELECT DISTINCT ON (crate, slot) crate, slot, zero_disc "
-                          "FROM zdisc WHERE "
-                          "(ecalid <> '')  AND timestamp < (SELECT timestamp FROM "
-                          "run_state WHERE run = %s) ORDER BY crate, slot, timestamp "
-                          "DESC LIMIT 304", (run,))
+    result = conn.execute(
+        text("SELECT DISTINCT ON (crate, slot) crate, slot, zero_disc FROM zdisc WHERE (ecalid <> '')  AND timestamp < (SELECT timestamp FROM run_state WHERE run = :run) ORDER BY crate, slot, timestamp DESC LIMIT 304"), 
+        {'run': run}
+    )
 
     rows = result.fetchall()
 
@@ -445,11 +455,12 @@ def get_maxed_thresholds(run):
     conn = engine.connect()
 
     if run == 0:
-        result = conn.execute("SELECT crate, slot, vthr FROM current_detector_state "
-            "ORDER BY crate, slot")
+        result = conn.execute(text("SELECT crate, slot, vthr FROM current_detector_state ORDER BY crate, slot"))
     else:
-        result = conn.execute("SELECT crate, slot, vthr FROM detector_state WHERE "
-            "run = %s ORDER BY crate, slot", run)
+        result = conn.execute(
+            text("SELECT crate, slot, vthr FROM detector_state WHERE run = :run ORDER BY crate, slot"), 
+            {'run': run}
+        )
 
     rows = result.fetchall()
 
@@ -470,9 +481,10 @@ def get_channel_status(crate, slot, channel):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT * FROM current_channel_status "
-        "WHERE crate = %s AND slot = %s AND channel = %s",
-        (crate,slot,channel))
+    result = conn.execute(
+        text("SELECT * FROM current_channel_status WHERE crate = :crate AND slot = :slot AND channel = :channel"),
+        {'crate': crate, 'slot': slot, 'channel': channel}
+    )
 
     if result is None:
         return None

@@ -83,8 +83,8 @@ def load_presn_search(search, start, end, offset, limit):
         try:
             all = db.view(view, startkey=startkey, endkey=endkey, descending=False)
             total = len(all.rows)
-            print "OK, run gives us", total
-            print all
+            print("OK, run gives us", total)
+            print(all)
         except:
             app.logger.warning("Code returned KeyError searching for presn information in the couchDB.")
 

@@ -1,4 +1,5 @@
 import sqlalchemy
+from sqlalchemy import text
 from .db import engine
 
 # Test map defined in Penn DAQ
@@ -36,8 +37,10 @@ def get_penn_daq_tests(crate, slot, channel):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT problems FROM test_status WHERE "
-         "crate = %s AND slot = %s", (crate, slot))
+    result = conn.execute(
+        text("SELECT problems FROM test_status WHERE crate = :crate AND slot = :slot"),
+        {'crate': crate, 'slot': slot}
+    )
 
     rows = result.fetchone()
 
@@ -59,9 +62,9 @@ def penn_daq_ccc_by_test(test, crate_sel, slot_sel, channel_sel):
     if test != "All":
         test_bit = PENN_DAQ_TESTS[test]
 
-    result = conn.execute("SELECT DISTINCT ON (crate, slot) "
+    result = conn.execute(text("SELECT DISTINCT ON (crate, slot) "
         "crate, slot, ecalid, mbid, dbid, problems FROM test_status "
-        "WHERE crate < 19 ORDER BY crate, slot, timestamp DESC")
+        "WHERE crate < 19 ORDER BY crate, slot, timestamp DESC"))
 
     rows = result.fetchall()
     if rows is None:
@@ -78,7 +81,7 @@ def penn_daq_ccc_by_test(test, crate_sel, slot_sel, channel_sel):
         for channel in range(len(problems)):
             if channel_sel != -1 and channel != channel_sel:
                 continue
-            db_id = dbid[channel/8]
+            db_id = dbid[channel//8]
             if test == "All" and problems[channel] != 0 or \
                test != "All" and problems[channel] & (1<<test_bit):
                 tests_failed = test_failed_str(problems[channel])
@@ -92,9 +95,10 @@ def ecal_state(crate, slot, channel):
     """
     conn = engine.connect()
 
-    result = conn.execute("SELECT vthr, tcmos_isetm, vbal_0, vbal_1, "
-        "mbid, dbid, tdisc_rmp FROM fecdoc WHERE crate = %s AND slot = %s "
-        "ORDER BY timestamp DESC LIMIT 1", (crate, slot))
+    result = conn.execute(
+        text("SELECT vthr, tcmos_isetm, vbal_0, vbal_1, mbid, dbid, tdisc_rmp FROM fecdoc WHERE crate = :crate AND slot = :slot ORDER BY timestamp DESC LIMIT 1"),
+        {'crate': crate, 'slot': slot}
+    )
 
     keys = result.keys()
     rows = result.fetchone()

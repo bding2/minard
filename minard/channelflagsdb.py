@@ -1,6 +1,7 @@
 from .db import engine_nl, engine
 from .detector_state import get_latest_run
 from .polling import pmt_type, PMT_TYPES
+from sqlalchemy import text
 
 def get_channel_flags(limit, run_range_low, run_range_high, summary, gold):
     """
@@ -13,27 +14,27 @@ def get_channel_flags(limit, run_range_low, run_range_high, summary, gold):
 
     if not run_range_high:
         current_run = get_latest_run()
-        result = conn.execute("SELECT DISTINCT ON (run) run, sync16, sync24, resync, timestamp, "
-                              "missed_count_burst FROM channel_flags WHERE run > %s "
-                              "ORDER BY run DESC, timestamp DESC", \
-                              (current_run - limit))
-        result_all = conn.execute("SELECT DISTINCT ON (crate, slot, channel, run) run, "
+        result = conn.execute(text("SELECT DISTINCT ON (run) run, sync16, sync24, resync, timestamp, "
+                              "missed_count_burst FROM channel_flags WHERE run > :run "
+                              "ORDER BY run DESC, timestamp DESC"), \
+                              {'run': current_run - limit})
+        result_all = conn.execute(text("SELECT DISTINCT ON (crate, slot, channel, run) run, "
                               "cmos_sync16, cgt_sync24, missed_count, cmos_sync16_pr, "
                               "cgt_sync24_pr, crate, slot, channel, timestamp FROM channel_flags "
-                              "WHERE run > %s ORDER BY crate, slot, channel, "
-                              "run DESC, timestamp DESC", \
-                              (current_run - limit))
+                              "WHERE run > :run ORDER BY crate, slot, channel, "
+                              "run DESC, timestamp DESC"), \
+                              {'run': current_run - limit})
     else:
-        result = conn.execute("SELECT DISTINCT ON (run) run, sync16, sync24, resync, timestamp, "
-                              "missed_count_burst FROM channel_flags WHERE run >= %s AND run <= %s "
-                              "ORDER BY run DESC, timestamp DESC", \
-                              (run_range_low, run_range_high))
-        result_all = conn.execute("SELECT DISTINCT ON (crate, slot, channel, run) run, "
+        result = conn.execute(text("SELECT DISTINCT ON (run) run, sync16, sync24, resync, timestamp, "
+                              "missed_count_burst FROM channel_flags WHERE run >= :run_range_low AND run <= :run_range_high "
+                              "ORDER BY run DESC, timestamp DESC"), \
+                              {'run_range_low': run_range_low, 'run_range_high': run_range_high})
+        result_all = conn.execute(text("SELECT DISTINCT ON (crate, slot, channel, run) run, "
                               "cmos_sync16, cgt_sync24, missed_count, cmos_sync16_pr, "
                               "cgt_sync24_pr, crate, slot, channel, timestamp FROM channel_flags "
-                              "WHERE run >= %s AND run <= %s ORDER BY crate, slot, channel, "
-                              "run DESC, timestamp DESC", \
-                              (run_range_low, run_range_high))
+                              "WHERE run >= :run_range_low AND run <= :run_range_high ORDER BY crate, slot, channel, "
+                              "run DESC, timestamp DESC"), \
+                              {'run_range_low': run_range_low, 'run_range_high': run_range_high})
 
 
     rows = result.fetchall()
@@ -128,11 +129,11 @@ def get_channel_flags_by_run(run):
     detector_conn = engine.connect()
 
     # Find all of the out-of-sync and missed-count channels for the run selected
-    result = conn.execute("SELECT DISTINCT ON (crate, slot, channel) crate, slot, channel, "
+    result = conn.execute(text("SELECT DISTINCT ON (crate, slot, channel) crate, slot, channel, "
                           "cmos_sync16, cgt_sync24, missed_count, cmos_sync16_pr, "
                           "cgt_sync24_pr, missed_count_burst FROM channel_flags "
-                          "WHERE run = %s ORDER BY crate, slot, channel, run DESC, timestamp DESC", \
-                          int(run))
+                          "WHERE run = :run ORDER BY crate, slot, channel, run DESC, timestamp DESC"), \
+                          {'run': int(run)})
 
     rows = result.fetchall()
 
@@ -186,8 +187,8 @@ def get_number_of_syncs(run):
 
     conn = engine_nl.connect()
 
-    result = conn.execute("SELECT run, sync16, sync24, resync FROM channel_flags "
-                          "WHERE run = %s ORDER BY timestamp DESC limit 1", (run))
+    result = conn.execute(text("SELECT run, sync16, sync24, resync FROM channel_flags "
+                          "WHERE run = :run ORDER BY timestamp DESC limit 1"), {'run': run})
 
     rows = result.fetchall()
 
