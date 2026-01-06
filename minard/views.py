@@ -2177,3 +2177,11 @@ def runselection_plots():
     datehigh_str = adj_datehigh.strftime("%Y-%m-%d")
     # Return info to webpage
     return render_template('runselection_plots.html', rs_plot_data=rs_plot_data, drop_down_crits=drop_down_crits, criteria=criteria, date_low=datelow_str, date_high=datehigh_str)
+
+@app.route('/xsnoed')
+def xsnoed():
+    """
+    XSNOED live streaming page via noVNC.
+    Container should be running on localhost:8080.
+    """
+    return render_template('xsnoed.html')
