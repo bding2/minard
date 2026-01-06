@@ -606,6 +606,13 @@ def list_runs_info(limit, offset, result, criteria, selected_run, run_range, dat
             else:
                 final_rs_tables[rn]['summary'] = placeholder_record(rn, 'scintillator')
 
+        for rn in final_rs_tables:
+            for crit in desired_criteria:
+                if crit not in final_rs_tables[rn]:
+                    final_rs_tables[rn][crit] = placeholder_record(rn, crit)
+            if 'summary' not in final_rs_tables[rn]:
+                final_rs_tables[rn]['summary'] = placeholder_record(rn, 'scintillator')
+        
         return final_rs_tables, drop_down_crits
     else:
         # Single-criteria mode 
