@@ -55,6 +55,8 @@ from datetime import datetime, timedelta
 from functools import wraps, update_wrapper
 from .dead_time import get_dead_time, get_dead_time_runs, get_dead_time_run_by_key
 from .radon_monitor import get_radon_monitor
+from .db import engine_nl
+from sqlalchemy import text
 
 TRIGGER_NAMES = \
 ['100L',
@@ -1969,20 +1971,32 @@ def scint_level():
 
 @app.route('/runselection')
 def runselection():
+    # Get current run number for default range
+    try:
+        conn = engine_nl.connect()
+        result_query = conn.execute(text("SELECT MAX(run_min) FROM run_selection WHERE type = 'RS_REPORT'"))
+        current_run = result_query.scalar()
+        conn.close()
+        if current_run is None:
+            current_run = 0
+    except:
+        current_run = 0
+    
     # Get variable info from webpage (with defaults defined)
     limit = request.args.get("limit", 25, type=int)
     offset = request.args.get("offset", 0, type=int)
     result = request.args.get("result", "All", type=str)
     criteria = request.args.get("criteria", "scintillator", type=str)
     selected_run = request.args.get("selected_run", 0, type=int)
-    run_range_low = request.args.get("run_range_low", 0, type=int)
-    run_range_high = request.args.get("run_range_high", 0, type=int)
+    run_range_low = request.args.get("run_range_low", max(0, current_run - 100), type=int)
+    run_range_high = request.args.get("run_range_high", current_run, type=int)
     year_low = request.args.get("year_low", 0, type=int)
     month_low = request.args.get("month_low", 0, type=int)
     day_low = request.args.get("day_low", 0, type=int)
     year_high = request.args.get("year_high", 0, type=int)
     month_high = request.args.get("month_high", 0, type=int)
     day_high = request.args.get("day_high", 0, type=int)
+    last_changed = request.args.get("last_changed", "run", type=str)
 
     # Per-variant results for collapsed scintillator mode
     result_gold = request.args.get("result_gold", "All", type=str)
@@ -1994,6 +2008,63 @@ def runselection():
     scint_variants = ['scintillator', 'scintillator_silver', 'scintillator_bronze', 'scintillator_nickel']
     if criteria in scint_variants and criteria != 'scintillator':
         criteria = 'scintillator'
+
+    # Synchronize date range and run range based on which was changed last
+    try:
+        conn_sync = engine_nl.connect()
+        # Determine if date range is specified (both ends)
+        date_low_spec = (year_low and month_low and day_low)
+        date_high_spec = (year_high and month_high and day_high)
+        date_specified = (date_low_spec and date_high_spec)
+
+        if last_changed == "date" and date_specified:
+            # User changed date fields - sync date->run
+            dlo = f"{year_low:04d}-{month_low:02d}-{day_low:02d} 00:00:00"
+            dhi = f"{year_high:04d}-{month_high:02d}-{day_high:02d} 23:59:59"
+            q = text(
+                """
+                SELECT MIN(run_min), MAX(run_min)
+                FROM run_selection
+                WHERE type = 'RS_REPORT'
+                AND (meta_data->'run_time'->'notes'->'dt'->>'timestamp')::timestamp BETWEEN :dlo AND :dhi
+                """
+            )
+            res = conn_sync.execute(q, {"dlo": dlo, "dhi": dhi}).fetchone()
+            if res and (res[0] is not None) and (res[1] is not None):
+                run_range_low = int(res[0])
+                run_range_high = int(res[1])
+        elif last_changed == "run" and selected_run == 0:
+            # Infer date range from run range (skip when specific run selected)
+            rlo = run_range_low if run_range_low != 0 else 0
+            rhi = run_range_high if run_range_high != 0 else 2147483647
+            q = text(
+                """
+                SELECT 
+                  MIN((meta_data->'run_time'->'notes'->'dt'->>'timestamp')::timestamp),
+                  MAX((meta_data->'run_time'->'notes'->'dt'->>'timestamp')::timestamp)
+                FROM run_selection
+                WHERE type = 'RS_REPORT'
+                AND run_min BETWEEN :rlo AND :rhi
+                """
+            )
+            res = conn_sync.execute(q, {"rlo": rlo, "rhi": rhi}).fetchone()
+            if res and (res[0] is not None) and (res[1] is not None):
+                dt_low = res[0]
+                dt_high = res[1]
+                # Extract date parts
+                year_low = dt_low.year
+                month_low = dt_low.month
+                day_low = dt_low.day
+                year_high = dt_high.year
+                month_high = dt_high.month
+                day_high = dt_high.day
+    except Exception:
+        pass
+    finally:
+        try:
+            conn_sync.close()
+        except Exception:
+            pass
 
     # Use this to get run info from databases, to display in list
     run_range = [run_range_low, run_range_high]

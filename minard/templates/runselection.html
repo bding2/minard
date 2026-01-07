@@ -49,6 +49,9 @@
                 <th> </th>
             </tr>
             <tr>
+                <!-- Hidden field to track which filter was changed last -->
+                <input type="hidden" id="last_changed" value="run">
+                
                 <!-- Number of displayed runs drop-down -->
                 <th> <select id="lim" onchange="get_limit(this.value, {{offset}}, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
                         <option selected value="{{limit}}">{{limit}}</option>
@@ -61,17 +64,17 @@
                 </th>
                 
                 <!-- Run number inputs -->
-                <th> <input style="margin-bottom: 30px; width: 80px;" type="text" id="run" value={{selected_run}} onKeyDown="if(event.keyCode==13) get_limit(lim.value, 0, crit.value, res.value, this.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input> </th>
-                <th> <input style="margin-bottom: 30px; width: 80px;" type="text" id="low" value={{run_range_low}} onKeyDown="if(event.keyCode==13) get_limit(lim.value, 0, crit.value, res.value, run.value, this.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input>
-                    - <input style="margin-bottom: 30px; width: 80px;" type="text" id="high" value={{run_range_high}} onKeyDown="if(event.keyCode==13) get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, this.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input></th>
+                <th> <input style="margin-bottom: 30px; width: 80px;" type="text" id="run" value={{selected_run}} onKeyDown="if(event.keyCode==13) {last_changed.value='run'; get_limit(lim.value, 0, crit.value, res.value, this.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='run'; get_limit(lim.value, 0, crit.value, res.value, this.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input> </th>
+                <th> <input style="margin-bottom: 30px; width: 80px;" type="text" id="low" value={{run_range_low}} onKeyDown="if(event.keyCode==13) {last_changed.value='run'; get_limit(lim.value, 0, crit.value, res.value, run.value, this.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='run'; get_limit(lim.value, 0, crit.value, res.value, run.value, this.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input>
+                    - <input style="margin-bottom: 30px; width: 80px;" type="text" id="high" value={{run_range_high}} onKeyDown="if(event.keyCode==13) {last_changed.value='run'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, this.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='run'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, this.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input></th>
                 <th>
-                    <input style="margin-bottom: 30px; width: 40px;" type="text" id="y_low" value={{year_low}} onKeyDown="if(event.keyCode==13) get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, this.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input>
-                    <input style="margin-bottom: 30px; width: 25px;" type="text" id="m_low" value={{month_low}} onKeyDown="if(event.keyCode==13) get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, this.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input>
-                    <input style="margin-bottom: 30px; width: 25px;" type="text" id="d_low" value={{day_low}} onKeyDown="if(event.keyCode==13) get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, this.value, y_high.value, m_high.value, d_high.value);"></input>
+                    <input style="margin-bottom: 30px; width: 40px;" type="text" id="y_low" value={{year_low}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, this.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, this.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input>
+                    <input style="margin-bottom: 30px; width: 25px;" type="text" id="m_low" value={{month_low}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, this.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, this.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input>
+                    <input style="margin-bottom: 30px; width: 25px;" type="text" id="d_low" value={{day_low}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, this.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, this.value, y_high.value, m_high.value, d_high.value);"></input>
                     -
-                    <input style="margin-bottom: 30px; width: 40px;" type="text" id="y_high" value={{year_high}} onKeyDown="if(event.keyCode==13) get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, this.value, m_high.value, d_high.value);"></input>
-                    <input style="margin-bottom: 30px; width: 25px;" type="text" id="m_high" value={{month_high}} onKeyDown="if(event.keyCode==13) get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, this.value, d_high.value);"></input>
-                    <input style="margin-bottom: 30px; width: 25px;" type="text" id="d_high" value={{day_high}} onKeyDown="if(event.keyCode==13) get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, this.value);"></input>
+                    <input style="margin-bottom: 30px; width: 40px;" type="text" id="y_high" value={{year_high}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, this.value, m_high.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, this.value, m_high.value, d_high.value);"></input>
+                    <input style="margin-bottom: 30px; width: 25px;" type="text" id="m_high" value={{month_high}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, this.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, this.value, d_high.value);"></input>
+                    <input style="margin-bottom: 30px; width: 25px;" type="text" id="d_high" value={{day_high}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, this.value);}" onchange="last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, this.value);"></input>
                 </th>
 
                 <!-- Run-selection outcome drop-down -->
@@ -295,6 +298,9 @@
       params["year_high"] = year_high;
       params["month_high"] = month_high;
       params["day_high"] = day_high;
+      // Track which filter was changed last
+      var lc = document.getElementById('last_changed');
+      params["last_changed"] = lc ? lc.value : 'run';
       window.location.replace($SCRIPT_ROOT + "/runselection?" + $.param(params));
     }
   </script>

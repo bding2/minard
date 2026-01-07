@@ -484,7 +484,8 @@ def list_runs_info(limit, offset, result, criteria, selected_run, run_range, dat
 
     if criteria == 'scintillator':
         # All four scintillator criterias (Gold, Silver, Bronze, Nickel)
-        fetch_limit = max(200, (offset + limit) * 8)
+        # No fetch limit - run range parameters handle filtering
+        fetch_limit = None
         rs_all = OrderedDict()  # run_number -> {crit: table}
         for crit in desired_criteria:
             tables = get_RS_reports(criteria=crit, run_min=run_min, run_max=run_max, limit=fetch_limit)
@@ -511,7 +512,7 @@ def list_runs_info(limit, offset, result, criteria, selected_run, run_range, dat
         if all_none:
             # Build candidate runs from run_state and exclude any run that has any scintillator variant
             # Determine fetch size and time window - only physics runs
-            fetch_limit = max(500, (offset + limit) * 8)
+            fetch_limit = None  # No limit - run range parameters handle filtering
             conditions = []
             # Physics runs only: run_type & 1 > 0
             conditions.append("(run_type & 1) > 0")
@@ -525,7 +526,10 @@ def list_runs_info(limit, offset, result, criteria, selected_run, run_range, dat
                 conditions.append("timestamp::date >= '%s'" % (min_runTime.strftime('%Y-%m-%d')))
             query_base = "SELECT run FROM run_state"
             query_base += " WHERE " + " AND ".join(conditions)
-            query_base += " ORDER BY run DESC LIMIT %d" % fetch_limit
+            if fetch_limit is not None:
+                query_base += " ORDER BY run DESC LIMIT %d" % int(fetch_limit)
+            else:
+                query_base += " ORDER BY run DESC"
             try:
                 conn_main = engine.connect()
                 res = conn_main.execute(query_base)
