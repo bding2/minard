@@ -329,12 +329,7 @@ def get_RS_reports(criteria=None, run_min=None, run_max=None, limit=None):
             tempt_dict['meta_data'] = row[0]
             tempt_dict['name'] = row[1]
             # Normalize timestamp format (remove fractional seconds, timezone) to match run_start style
-            try:
-                ts_str = str(row[2])
-                ts_str = ts_str.split('.')[0]
-            except Exception:
-                ts_str = 'No Data'
-            tempt_dict['timestamp'] = ts_str
+            tempt_dict['timestamp'] = row[2]
             tempt_dict['run_number'] = row[3]
             if 'notes' in row[0]['run_time']:
                 tempt_dict['run_start'] = row[0]['run_time']['notes']['dt']['timestamp'].split('.')[0]
