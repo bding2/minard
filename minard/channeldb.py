@@ -109,9 +109,9 @@ def get_channels(kwargs, limit=100, sort_by=None):
     conditions = []
     for key in kwargs:
         if key == 'type':
-            conditions.append("type & 65534 = %(type)s")
+            conditions.append("type & 65534 = :type")
         elif key in fields:
-            conditions.append("%s = %%(%s)s" % (key, key))
+            conditions.append("%s = :%s" % (key, key))
 
     query = "SELECT * FROM current_channel_status NATURAL JOIN pmt_info "
     if len(conditions):

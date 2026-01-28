@@ -5,13 +5,16 @@
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/pca.css') }}" media="screen">
   <style>
     .btn2 {
-        background-color: #228B22;
-        padding: 6px 6px;
-        color: white;
-        text-align: center;
-        font-size: 14px;
-        margin: 4px 2px;
-        cursor: pointer;
+      background-color: #228B22;
+      display: inline-block;
+      min-width: 80px;
+      padding: 6px 8px;
+      color: white;
+      text-align: center;
+      font-size: 14px;
+      margin: 4px 2px;
+      cursor: pointer;
+      box-sizing: border-box;
     }
     .right_align {
       float: right;
@@ -328,17 +331,19 @@
             </div>
             <div class="col-md-6">
               {% for i in range((lists|length/2)|round|int) %}
-              <tr>
-                {{ form_checkbox(list_form[lists[i]]) }}
-              </tr>
+                {% if lists[i] is defined and list_form[lists[i]] is defined %}
+                  <tr>
+                    {{ form_checkbox(list_form[lists[i]]) }}
+                  </tr>
+                {% endif %}
               {% endfor %}
             </div>
             <div class="col-md-6">
-              {% for i in range((lists|length/2)|round|int, lists|length) %}
-              <tr>
-                {{ form_checkbox(list_form[lists[i]]) }}
-              </tr>
-              {% endfor %}
+              {% if lists[i] is defined and list_form[lists[i]] is defined %}
+                <tr>
+                  {{ form_checkbox(list_form[lists[i]]) }}
+                </tr>
+              {% endif %}
             </div>
             <div class="col-md-12">
               {% if list_form.name.errors %}

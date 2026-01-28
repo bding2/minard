@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 The objective here is to retrieve and store baseline values into a redis db.
 """
@@ -20,7 +20,7 @@ def PutBaselinesInDatabase(mtc):
     now = int(time.time())
 
     baselines = {}
-    for name, mtc_name in DBToMTC.iteritems():
+    for name, mtc_name in DBToMTC.items():
         # mtc server returns baselines in mV so we divide by 1000 to convert
         # to volts.
         baselines[name] = float(mtc.send('threshmon %s' % mtc_name))/1000
@@ -28,7 +28,7 @@ def PutBaselinesInDatabase(mtc):
     for interval in INTERVALS:
         p.incrby('ts:%i:%i:baseline-count' % (interval,now//interval),1)
         p.expire('ts:%i:%i:baseline-count' % (interval,now//interval),interval*EXPIRE);
-        for name, baseline in baselines.iteritems():
+        for name, baseline in baselines.items():
             key = 'ts:%i:%i:%s' % (interval,now//interval,name+"-Baseline")
             p.incrbyfloat(key,baseline)
             p.expire(key,interval*EXPIRE)
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     if args.daemonize:
         try:
             daemonize()
-        except OSError,e:
+        except OSError as e:
             sys.stderr.write("Failed to create fork: %d (%s)\n" % \
                 (e.errno,e.strerror))
             sys.exit(1)
@@ -128,4 +128,6 @@ if __name__ == '__main__':
         try:
             PutBaselinesInDatabase(mtc)
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             log.warn("couldn't update MTCA baselines: %s" % str(e))

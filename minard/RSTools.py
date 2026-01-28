@@ -95,30 +95,30 @@ def get_run_lists():
     return data
 
 def get_list_history(run):
-    """
-    Get run list history for this run.
-    """
-    # key | run | uploaded_to | removed_from | name | timestamp | comment
     c = False
     try:
         conn = engine.connect()
         c = True
-        result = conn.execute(text("SELECT timestamp, uploaded_to, removed_from, comment, name FROM rs_history WHERE run=%s ORDER BY timestamp DESC", (run,)))
+        stmt = text(
+            "SELECT timestamp, uploaded_to, removed_from, comment, name "
+            "FROM rs_history WHERE run = :run ORDER BY timestamp DESC"
+        )
+        result = conn.execute(stmt, {"run": int(run)})
         data = OrderedDict()
         for i, entry in enumerate(result.fetchall()):
-            data[str(i)] = {}
-            data[str(i)]['timestamp'] = str(entry[0])
-            data[str(i)]['list_added'] = str(entry[1])
-            data[str(i)]['list_removed'] = str(entry[2])
-            data[str(i)]['comment'] = str(entry[3])
-            data[str(i)]['name'] = str(entry[4])
-    except:
-        print('ERROR: Failed downloading run list history')
+            data[str(i)] = {
+                "timestamp": str(entry[0]),
+                "list_added": str(entry[1]),
+                "list_removed": str(entry[2]),
+                "comment": str(entry[3]),
+                "name": str(entry[4]),
+            }
+    except Exception as e:
+        print("ERROR: Failed downloading run list history:", e)
         data = False
-
-    if c:
-        conn.close()
-    
+    finally:
+        if c:
+            conn.close()
     return data
 
 def update_run_lists(form, run, lists, data):
@@ -432,11 +432,8 @@ def get_filtered_RS_tables(run_min, run_max, min_runTime, max_runTime, offset, l
 
     return filtered_rs_tables, run_numbers, no_more_tables
 
-def list_runs_info(limit, offset, result, criteria, selected_run, run_range, date_range):
-    '''Want a list of runs that satisfy condition from (latest run - offset)
-    to (latest run - offset - limit). Where the runs considered here are only
-    those that satisfy the conditions (i.e. we always want to display a number
-    of runs = limit, no matter the conditions.'''
+def list_runs_info(result, criteria, selected_run, run_range, date_range):
+    '''Return all runs that satisfy the filter conditions.'''
 
     # Get list of criteria to put in drop-down menu (in order)
     drop_down_crits = app.config['DROP_DOWN_MENU_CRITS']
@@ -590,7 +587,7 @@ def list_runs_info(limit, offset, result, criteria, selected_run, run_range, dat
                     candidate_runs.append(rn)
 
         candidate_runs = sorted(candidate_runs, reverse=True)
-        page_runs = candidate_runs[offset:offset+limit]
+        page_runs = candidate_runs  # No pagination - display all matching runs
 
         final_rs_tables = OrderedDict()
         for rn in page_runs:
@@ -620,20 +617,20 @@ def list_runs_info(limit, offset, result, criteria, selected_run, run_range, dat
         
         return final_rs_tables, drop_down_crits
     else:
-        # Single-criteria mode 
-        filtered_rs_tables, run_numbers, no_more_tables = get_filtered_RS_tables(run_min, run_max, min_runTime, max_runTime, offset, limit, result, criteria)
+        # Single-criteria mode - get all matching runs without pagination
+        filtered_rs_tables, run_numbers, no_more_tables = get_filtered_RS_tables(run_min, run_max, min_runTime, max_runTime, 0, 100000, result, criteria)
         if filtered_rs_tables is False:
             return False, drop_down_crits
         run_numbers.sort(reverse=True)
 
         num_loops = 0
-        temp_lim = limit
-        while (len(run_numbers) <= (offset + limit)) and (no_more_tables == False) and (num_loops <= 100):
+        temp_lim = 100000
+        while (len(run_numbers) <= 100000) and (no_more_tables == False) and (num_loops <= 100):
             if len(run_numbers) == 0:
                 earliest_run = None
             else:
                 earliest_run = run_numbers[-1] - 1
-            new_filtered_rs_tables, new_run_numbers, no_more_tables = get_filtered_RS_tables(run_min, earliest_run, min_runTime, max_runTime, offset, temp_lim, result, criteria)
+            new_filtered_rs_tables, new_run_numbers, no_more_tables = get_filtered_RS_tables(run_min, earliest_run, min_runTime, max_runTime, 0, temp_lim, result, criteria)
             filtered_rs_tables.update(new_filtered_rs_tables)
             run_numbers += new_run_numbers
             run_numbers.sort(reverse=True)
@@ -641,10 +638,8 @@ def list_runs_info(limit, offset, result, criteria, selected_run, run_range, dat
             temp_lim *= 2
 
         final_rs_tables = OrderedDict()
-        for i in range(offset, (offset+limit)):
-            if i < len(run_numbers):
-                rn = run_numbers[i]
-                final_rs_tables[rn] = filtered_rs_tables[rn]
+        for rn in run_numbers:
+            final_rs_tables[rn] = filtered_rs_tables[rn]
 
         # Augment with the four scintillator variants for display and set summary to selected criteria
         if len(final_rs_tables) > 0:

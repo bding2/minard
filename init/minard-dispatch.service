@@ -1,0 +1,13 @@
+[Unit]
+Description=Minard Dispatch Service
+After=network.target
+
+[Service]
+User=minard
+Group=snotdaq
+Environment=MINARD_SETTINGS=/etc/minard/settings.cfg
+ExecStart=/opt/minard/bin/minard-dispatch --host nlag.sp.snolab.ca --loglevel warning --logfile=/var/log/minard/minard_dispatch.log
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

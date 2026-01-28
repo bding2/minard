@@ -1,0 +1,13 @@
+[Unit]
+Description=XSNOED graphical environment
+After=network.target
+
+[Service]
+Type=simple
+User=snotdaq
+WorkingDirectory=/home/snotdaq/SNOPLUS
+ExecStart=/home/snotdaq/SNOPLUS/start_xsnoed.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

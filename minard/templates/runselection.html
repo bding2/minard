@@ -5,12 +5,15 @@
   <style>
     .btn2 {
         background-color: #228B22;
-        padding: 6px 6px;
+        display: inline-block;
+        min-width: 80px;
+        padding: 6px 8px;
         color: white;
         text-align: center;
         font-size: 14px;
         margin: 4px 2px;
         cursor: pointer;
+        box-sizing: border-box;
     }
     .rs-multi { 
         display: grid; 
@@ -40,7 +43,6 @@
         <div class="col-md-12">
             <table class="table table-hover">
             <tr>
-                <th> Limit: </th>
                 <th> Select Run: </th>
                 <th> Run Range: </th>
                 <th> Date Range (yyyy-mm-dd): </th>
@@ -52,29 +54,31 @@
                 <!-- Hidden field to track which filter was changed last -->
                 <input type="hidden" id="last_changed" value="run">
                 
-                <!-- Number of displayed runs drop-down -->
-                <th> <select id="lim" onchange="get_limit(this.value, {{offset}}, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
-                        <option selected value="{{limit}}">{{limit}}</option>
-                        {% for n in [10, 25, 50, 100, 500] %}
-                            {% if n != limit %}
-                                <option value="{{n}}">{{n}}</option>
-                            {% endif %}
-                        {% endfor %}
-                    </select>
-                </th>
-                
                 <!-- Run number inputs -->
-                <th> <input style="margin-bottom: 30px; width: 80px;" type="text" id="run" value={{selected_run}} onKeyDown="if(event.keyCode==13) {last_changed.value='run'; get_limit(lim.value, 0, crit.value, res.value, this.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='run'; get_limit(lim.value, 0, crit.value, res.value, this.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input> </th>
-                <th> <input style="margin-bottom: 30px; width: 80px;" type="text" id="low" value={{run_range_low}} onKeyDown="if(event.keyCode==13) {last_changed.value='run'; get_limit(lim.value, 0, crit.value, res.value, run.value, this.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='run'; get_limit(lim.value, 0, crit.value, res.value, run.value, this.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input>
-                    - <input style="margin-bottom: 30px; width: 80px;" type="text" id="high" value={{run_range_high}} onKeyDown="if(event.keyCode==13) {last_changed.value='run'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, this.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='run'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, this.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input></th>
-                <th>
-                    <input style="margin-bottom: 30px; width: 40px;" type="text" id="y_low" value={{year_low}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, this.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, this.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input>
-                    <input style="margin-bottom: 30px; width: 25px;" type="text" id="m_low" value={{month_low}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, this.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, this.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input>
-                    <input style="margin-bottom: 30px; width: 25px;" type="text" id="d_low" value={{day_low}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, this.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, this.value, y_high.value, m_high.value, d_high.value);"></input>
-                    -
-                    <input style="margin-bottom: 30px; width: 40px;" type="text" id="y_high" value={{year_high}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, this.value, m_high.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, this.value, m_high.value, d_high.value);"></input>
-                    <input style="margin-bottom: 30px; width: 25px;" type="text" id="m_high" value={{month_high}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, this.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, this.value, d_high.value);"></input>
-                    <input style="margin-bottom: 30px; width: 25px;" type="text" id="d_high" value={{day_high}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, this.value);}" onchange="last_changed.value='date'; get_limit(lim.value, 0, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, this.value);"></input>
+                <th> <input style="margin-bottom: 30px; width: 80px;" type="text" id="run" value={{selected_run}} onKeyDown="if(event.keyCode==13) {last_changed.value='run'; get_limit(crit.value, res.value, this.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='run'; get_limit(crit.value, res.value, this.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input> </th>
+                <th style="vertical-align: top;"> 
+                    <div class="rs-multi">
+                        <label>From:</label>
+                        <input style="width: 80px;" type="text" id="low" value={{run_range_low}} onKeyDown="if(event.keyCode==13) {last_changed.value='run'; get_limit(crit.value, res.value, run.value, this.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='run'; get_limit(crit.value, res.value, run.value, this.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input>
+                        <label>To:</label>
+                        <input style="width: 80px;" type="text" id="high" value={{run_range_high}} onKeyDown="if(event.keyCode==13) {last_changed.value='run'; get_limit(crit.value, res.value, run.value, low.value, this.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='run'; get_limit(crit.value, res.value, run.value, low.value, this.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input>
+                    </div>
+                </th>
+                <th style="vertical-align: top;">
+                    <div class="rs-multi">
+                        <label>From:</label>
+                        <div>
+                            <input style="width: 40px;" type="text" id="y_low" value={{year_low}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(crit.value, res.value, run.value, low.value, high.value, this.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(crit.value, res.value, run.value, low.value, high.value, this.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input>
+                            <input style="width: 25px;" type="text" id="m_low" value={{month_low}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, this.value, d_low.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, this.value, d_low.value, y_high.value, m_high.value, d_high.value);"></input>
+                            <input style="width: 25px;" type="text" id="d_low" value={{day_low}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, this.value, y_high.value, m_high.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, this.value, y_high.value, m_high.value, d_high.value);"></input>
+                        </div>
+                        <label>To:</label>
+                        <div>
+                            <input style="width: 40px;" type="text" id="y_high" value={{year_high}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, this.value, m_high.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, this.value, m_high.value, d_high.value);"></input>
+                            <input style="width: 25px;" type="text" id="m_high" value={{month_high}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, this.value, d_high.value);}" onchange="last_changed.value='date'; get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, this.value, d_high.value);"></input>
+                            <input style="width: 25px;" type="text" id="d_high" value={{day_high}} onKeyDown="if(event.keyCode==13) {last_changed.value='date'; get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, this.value);}" onchange="last_changed.value='date'; get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, this.value);"></input>
+                        </div>
+                    </div>
                 </th>
 
                 <!-- Run-selection outcome drop-down -->
@@ -87,7 +91,7 @@
                         <!-- Per-variant result filters -->
                         <div class="rs-multi">
                             <label style="margin:0;">Gold:</label>
-                            <select id="res_gold" onchange="get_limit(lim.value, {{offset}}, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
+                            <select id="res_gold" onchange="get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
                                 {% set selected = result_gold if result_gold is defined else 'All' %}
                                 <option value="All" {{ 'selected' if selected=='All' else '' }}>All</option>
                                 <option value="Pass" {{ 'selected' if selected=='Pass' else '' }}>Pass</option>
@@ -96,7 +100,7 @@
                                 <option value="None" {{ 'selected' if selected=='None' else '' }}>None</option>
                             </select>
                             <label style="margin:0;">Silver:</label>
-                            <select id="res_silver" onchange="get_limit(lim.value, {{offset}}, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
+                            <select id="res_silver" onchange="get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
                                 {% set selected = result_silver if result_silver is defined else 'All' %}
                                 <option value="All" {{ 'selected' if selected=='All' else '' }}>All</option>
                                 <option value="Pass" {{ 'selected' if selected=='Pass' else '' }}>Pass</option>
@@ -105,7 +109,7 @@
                                 <option value="None" {{ 'selected' if selected=='None' else '' }}>None</option>
                             </select>
                             <label style="margin:0;">Bronze:</label>
-                            <select id="res_bronze" onchange="get_limit(lim.value, {{offset}}, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
+                            <select id="res_bronze" onchange="get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
                                 {% set selected = result_bronze if result_bronze is defined else 'All' %}
                                 <option value="All" {{ 'selected' if selected=='All' else '' }}>All</option>
                                 <option value="Pass" {{ 'selected' if selected=='Pass' else '' }}>Pass</option>
@@ -114,7 +118,7 @@
                                 <option value="None" {{ 'selected' if selected=='None' else '' }}>None</option>
                             </select>
                             <label style="margin:0;">Nickel:</label>
-                            <select id="res_nickel" onchange="get_limit(lim.value, {{offset}}, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
+                            <select id="res_nickel" onchange="get_limit(crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
                                 {% set selected = result_nickel if result_nickel is defined else 'All' %}
                                 <option value="All" {{ 'selected' if selected=='All' else '' }}>All</option>
                                 <option value="Pass" {{ 'selected' if selected=='Pass' else '' }}>Pass</option>
@@ -124,7 +128,7 @@
                             </select>
                         </div>
                     {% else %}
-                        <select id="res" onchange="get_limit(lim.value, {{offset}}, crit.value, this.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
+                        <select id="res" onchange="get_limit(crit.value, this.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
                             <option selected value="{{result}}">{{result}}</option>
                             {% for n in ["All", "Pass", "Fail", "Purgatory"] %}
                                 {% if n != result %}
@@ -137,7 +141,7 @@
 
                 <!-- Criteria drop-down -->
                 <th>
-                    <select id="crit" onchange="get_limit(lim.value, {{offset}}, this.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
+                    <select id="crit" onchange="get_limit(this.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);">
                     <option selected value="{{criteria}}">{{criteria}}</option>
                     {% for n in drop_down_crits %}
                         {% if n != criteria %}
@@ -147,18 +151,15 @@
                     </select>
                 </th>
 
-                <!-- Back and Next buttons -->
-                {% if offset == 0 %}
-                    <th> <button type="submit" class="btn2" disabled>Back</button> </th>
-                    <th> <button type="submit" class="btn2" onclick="get_limit(lim.value, lim.value, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value)">Next</button> </th>
-                {% else %}
-                    {% if limit > offset %}
-                        <th> <button type="submit" class="btn2" disabled>Back</button> </th>
-                    {% else %}
-                        <th> <button type="submit" class="btn2" onclick="get_limit(lim.value, {{offset - limit}}, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value)">Back</button> </th>
-                    {% endif %}
-                    <th> <button type="submit" class="btn2" onclick="get_limit(lim.value, {{offset + limit}}, crit.value, res.value, run.value, low.value, high.value, y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value)">Next</button> </th>
-                {% endif %}
+                <!-- Navigation buttons -->
+                <th>
+                    <button class="btn2" onclick="shift_runs(-25); return false;">-25</button>
+                    <button class="btn2" onclick="shift_runs(25); return false;">+25</button>
+                    <br>
+                    <button class="btn2" onclick="shift_date(-1); return false;">-Day</button>
+                    <button class="btn2" onclick="shift_date(1); return false;">+Day</button>
+                </th>
+                
             </tr>
             </table>
         
@@ -270,11 +271,47 @@
 {% endblock %}
 {% block script %}
   <script>
-    function get_limit(limit, offset, criteria, result, selected_run, run_range_low, run_range_high,
+    function shift_date(days) {
+      // Shift the date range by the specified number of days
+      var y_low_elem = document.getElementById('y_low');
+      var m_low_elem = document.getElementById('m_low');
+      var d_low_elem = document.getElementById('d_low');
+      var y_high_elem = document.getElementById('y_high');
+      var m_high_elem = document.getElementById('m_high');
+      var d_high_elem = document.getElementById('d_high');
+      
+      if (!y_low_elem.value || !d_low_elem.value) return; // No date set
+      
+      var low_date = new Date(parseInt(y_low_elem.value), parseInt(m_low_elem.value) - 1, parseInt(d_low_elem.value));
+      var high_date = new Date(parseInt(y_high_elem.value), parseInt(m_high_elem.value) - 1, parseInt(d_high_elem.value));
+      
+      low_date.setDate(low_date.getDate() + days);
+      high_date.setDate(high_date.getDate() + days);
+      
+      last_changed.value = 'date';
+      get_limit(crit.value, res.value, run.value, low.value, high.value,
+                low_date.getFullYear(), low_date.getMonth() + 1, low_date.getDate(),
+                high_date.getFullYear(), high_date.getMonth() + 1, high_date.getDate());
+    }
+    
+    function shift_runs(count) {
+      // Shift the run range by the specified count
+      var low_elem = document.getElementById('low');
+      var high_elem = document.getElementById('high');
+      
+      var low_run = parseInt(low_elem.value) + count;
+      var high_run = parseInt(high_elem.value) + count;
+      
+      if (low_run < 0) low_run = 0;
+      
+      last_changed.value = 'run';
+      get_limit(crit.value, res.value, run.value, low_run, high_run,
+                y_low.value, m_low.value, d_low.value, y_high.value, m_high.value, d_high.value);
+    }
+    
+    function get_limit(criteria, result, selected_run, run_range_low, run_range_high,
                        year_low, month_low, day_low, year_high, month_high, day_high) {
       params = {};
-      params["limit"] = limit;
-      params["offset"] = offset;
       params["criteria"] = criteria;
             params["result"] = result;
             if (criteria === 'scintillator') {

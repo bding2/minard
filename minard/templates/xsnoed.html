@@ -95,8 +95,12 @@
       var loadTimeout;
       var isLocked = true;
 
-      // Build dynamic VNC URL using same hostname as minard
-      var vncUrl = 'http://192.168.80.52:8080/vnc.html?autoconnect=true&resize=scale';
+      // XSNOED virtual desktop url
+      var vncUrl;
+      // Use secure websockets (encrypt=1) when the page is served over HTTPS.
+      var encryptFlag = (location.protocol === 'https:') ? 1 : 0;
+
+      vncUrl = location.protocol + '//' + location.host + '/vmonitoring/novnc/vnc.html?autoconnect=true&resize=scale&encrypt=' + encryptFlag + '&path=/vmonitoring/websockify/';
 
       function showLoading() {
         loading.style.display = 'block';
@@ -137,6 +141,19 @@
 
       frame.addEventListener('load', function(){
         clearTimeout(loadTimeout);
+        try {
+          var fw = frame.contentWindow;
+          if (fw) {
+            fw.onbeforeunload = null;
+            var _add = fw.addEventListener;
+            fw.addEventListener = function(type, listener, opts){
+              if (type === 'beforeunload') return;
+              return _add.call(this, type, listener, opts);
+            };
+          }
+        } catch (e) {
+          /* ignore cross-origin or other errors */
+        }
         // Give noVNC a moment to initialize
         setTimeout(function(){
           showFrame();

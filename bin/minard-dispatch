@@ -310,7 +310,9 @@ if __name__ == '__main__':
         try:
             pull(args.host, args.num_workers, args.worker)
         except Exception as e:
+            import sys
             import traceback
             log.warn("unhandled exception: %s\n%s" % (str(e), traceback.format_exc()))
+            traceback.print_exc(file=sys.stderr)
             time.sleep(60)
             continue

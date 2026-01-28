@@ -10,8 +10,7 @@ import os
 log = Logger()
 
 def base_consumer(host, port):
-    data = DataStream(host, port=port, subscriptions=['BASE'],
-		      timeout=0.1)
+    data = DataStream(host, port=port, subscriptions=['BASE'], timeout=0.1)
     data.connect()
 
     log.notice("connected to data server at '%s'" % host)
@@ -23,12 +22,15 @@ def base_consumer(host, port):
         now = int(time.time())
         try:
             id, rec = data.recv_record()
+            if isinstance(id, bytes):
+                id = id.decode('ascii', 'ignore')
+
         except socket.timeout as e:
             # timeout
             log.debug("timeout")
             id = None
 
-        if now > then and len(base_currents) > 0:
+        if then is not None and now > then and len(base_currents) > 0:
             log.debug("flush to redis")
             flush_to_redis(base_currents, 'base', then)
             then = None
@@ -39,7 +41,7 @@ def base_consumer(host, port):
             continue
 
         if id != 'BASE':
-            raise ValueError("Expected base current record got id %i" % id)
+            raise ValueError("Expected base current record got id %r" % (id,))
 
         if then is None:
             then = now
@@ -103,5 +105,9 @@ if __name__ == '__main__':
             log.warn('failed to connect to data: %s' % str(e))
             time.sleep(60)
         except Exception as e:
-            log.warn('unhandled exception: %s' % str(e))
+            import sys
+            import traceback
+            log.warn("unhandled exception: %s\n%s" % (str(e), traceback.format_exc()))
+            traceback.print_exc(file=sys.stderr)
             time.sleep(60)
+            continue
