@@ -14,35 +14,48 @@ docs:
 	cp -r docs/_build/html/* minard/static/docs
 
 /opt/minard/bin/activate:
-	virtualenv --system-site-packages /opt/minard
+	sudo rm -rf /opt/minard
+	sudo virtualenv -p python3 --system-site-packages /opt/minard
 
 install: /opt/minard/bin/activate
-	# clean the build/ directory since it contains scripts with the shebang
-	# pointing to /usr/bin/python after running make build
-	python setup.py clean --all
-	/opt/minard/bin/pip install .
-	# reinstall minard with -I flag so that it reinstalls even
-	# if the version doesn't change
-	/opt/minard/bin/pip install --no-deps -I .
-	# need to install gunicorn in virtual environment so that the
-	# script /opt/minard/bin/gunicorn exists
-	/opt/minard/bin/pip install gunicorn
+# 	# clean the build/ directory since it contains scripts with the shebang pointing to /usr/bin/python after running make build
+	sudo python3 setup.py clean --all
+
+#   # install dependencies
+	sudo /opt/minard/bin/pip install --upgrade pip
+	sudo /opt/minard/bin/pip install .
+
+# 	# copy static files to /var/www/minard so that nginx can serve them instead of flask
 	mkdir -p /var/www/minard
-	# copy static files to /var/www/minard so that nginx
-	# can serve them instead of flask
-	cp -r minard/static /var/www/minard
-	$(INSTALL) init/gunicorn /etc/init.d/
-	$(INSTALL) init/gunicorn_snoplus_log /etc/init.d/
-	$(INSTALL) init/minard-dispatch /etc/init.d/
-	$(INSTALL) init/minard-cmos /etc/init.d/
-	$(INSTALL) init/minard-base /etc/init.d/
-	$(INSTALL) init/baseline_monitor /etc/init.d/
-	update-rc.d gunicorn on
-	update-rc.d gunicorn_snoplus_log on
-	update-rc.d minard-dispatch on
-	update-rc.d minard-cmos on
-	update-rc.d minard-base on
-	update-rc.d baseline_monitor on
-	service gunicorn restart
+	sudo cp -r minard/static /var/www/minard
+
+# 	# install to initialization directories and start services
+	sudo $(INSTALL) init/gunicorn.service /etc/systemd/system
+	sudo $(INSTALL) init/gunicorn_snoplus_log.service /etc/systemd/system
+	sudo $(INSTALL) init/minard-dispatch.service /etc/systemd/system
+	sudo $(INSTALL) init/minard-cmos.service /etc/systemd/system
+	sudo $(INSTALL) init/minard-base.service /etc/systemd/system
+	sudo $(INSTALL) init/baseline_monitor.service /etc/systemd/system
+	sudo $(INSTALL) init/dispatch.service /etc/systemd/system
+	sudo $(INSTALL) init/xsnoed.service /etc/systemd/system
+
+	sudo systemctl enable gunicorn
+# 	sudo systemctl enable gunicorn_snoplus_log
+	sudo systemctl enable minard-dispatch
+	sudo systemctl enable minard-cmos
+	sudo systemctl enable minard-base
+	sudo systemctl enable baseline_monitor
+	sudo systemctl enable dispatch
+	sudo systemctl enable xsnoed
+
+	sudo systemctl start gunicorn
+# 	sudo systemctl start gunicorn_snoplus_log
+	sudo systemctl start minard-dispatch
+	sudo systemctl start minard-cmos
+	sudo systemctl start minard-base
+	sudo systemctl start baseline_monitor
+	sudo systemctl start dispatch
+	sudo systemctl start xsnoed
+
 
 .PHONY: install build docs

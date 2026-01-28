@@ -1,0 +1,12 @@
+[Unit]
+Description=Minard CMOS Service
+After=network.target
+
+[Service]
+User=minard
+Environment="MINARD_SETTINGS=/etc/minard/settings.cfg"
+ExecStart=/opt/minard/bin/minard-cmos --logfile=/var/log/minard/minard_cmos.log
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

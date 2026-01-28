@@ -1,0 +1,12 @@
+[Unit]
+Description=Monitor MTCA Baselines
+After=network.target
+
+[Service]
+User=minard
+Environment="MINARD_SETTINGS=/etc/minard/settings.cfg"
+ExecStart=/opt/minard/bin/mtca_baseline --logfile=/var/log/minard/mtca_baseline.log --enable-logging --loop-forever
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

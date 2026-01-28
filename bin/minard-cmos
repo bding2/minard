@@ -24,6 +24,8 @@ def cmos_consumer(host, port):
     while True:
         try:
             id, rec = data.recv_record()
+            if isinstance(id, bytes):
+                id = id.decode('ascii', 'ignore')
         except socket.timeout as e:
             # timeout
             log.debug("timeout")
@@ -31,10 +33,12 @@ def cmos_consumer(host, port):
 
         now = int(time.time())
 
-        if now > then and len(cmos_rates) > 0:
+        if then is not None and now > then and len(cmos_rates) > 0:
             # flush results to database once a second
             log.debug("flush to redis")
-            flush_to_redis(cmos_rates, 'cmos', then)
+            # Convert potential numpy int64 keys/values to native types
+            safe_rates = {str(int(k)) : float(v) for k, v in cmos_rates.items()}
+            flush_to_redis(safe_rates, 'cmos', then)
             then = None
             cmos_rates.clear()
 
@@ -43,7 +47,7 @@ def cmos_consumer(host, port):
             continue
 
         if id != 'CMOS':
-            raise ValueError('Expected CMOS record, got record %i' % id)
+            raise ValueError('Expected CMOS record, got record %s' % id)
 
         if then is None:
             then = now
@@ -51,7 +55,7 @@ def cmos_consumer(host, port):
         crate, slotmask, channelmask, error_flags, counts, timestamp = \
             parse_cmos(rec)
 
-        log.debug("got data from crate %i" % crate)
+        log.debug("got data from crate %s" % crate)
 
         if slotmask == 0:
             continue
@@ -127,5 +131,9 @@ if __name__ == '__main__':
             log.warn('failed to connect to data: %s' % str(e))
             time.sleep(60)
         except Exception as e:
-            log.warn('unhandled exception: %s' % str(e))
+            import sys
+            import traceback
+            log.warn("unhandled exception: %s\n%s" % (str(e), traceback.format_exc()))
+            traceback.print_exc(file=sys.stderr)
             time.sleep(60)
+            continue

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import sys
-import urllib
-import urllib2
+import urllib.request
+import urllib.parse
+import urllib.error
 from base64 import b64encode
 import threading
 import logging
@@ -40,7 +41,7 @@ def retry(ExceptionToCheck, tries=4, delay=3, backoff=2, logger=None):
             while mtries > 1:
                 try:
                     return f(*args, **kwargs)
-                except ExceptionToCheck, e:
+                except ExceptionToCheck as e:
                     msg = "%s, Retrying in %d seconds..." % (str(e), mdelay)
                     if logger:
                         logger.warning(msg)
@@ -64,7 +65,7 @@ def repeatfunc(func, times=None, *args):
         return starmap(func, repeat(args))
     return starmap(func, repeat(args, times))
 
-@retry((urllib2.URLError,socket.timeout), tries=10, delay=1, backoff=1)
+@retry((urllib.error.URLError,socket.timeout), tries=10, delay=1, backoff=1)
 def post(url, data, auth=None, retries=10):
     """
     Sends a POST request containing `data` to url. `auth` should be a
@@ -73,12 +74,14 @@ def post(url, data, auth=None, retries=10):
     if not url.startswith('http://'):
         url = 'http://' + url
 
-    request = urllib2.Request(url)
+    request = urllib.request.Request(url)
     if auth:
-        request.add_header('Authorization', 'Basic %s' % b64encode('%s:%s' % auth))
+        auth_str = '%s:%s' % auth
+        auth_bytes = auth_str.encode('ascii')
+        request.add_header('Authorization', 'Basic %s' % b64encode(auth_bytes).decode('ascii'))
 
-    params = urllib.urlencode(data)
-    response = urllib2.urlopen(request, params)
+    params = urllib.parse.urlencode(data).encode('utf-8')
+    response = urllib.request.urlopen(request, params)
     return response.read()
 
 class HTTPHandler(logging.Handler):
@@ -114,7 +117,7 @@ def post_heartbeat(host, name, auth=None):
     data = {'name': name, 'status': 'ok'}
     try:
         response = post('{host}/monitoring/heartbeat'.format(host=host), data, auth)
-    except urllib2.URLError:
+    except urllib.error.URLError:
         print("Failed to send heartbeat.", file=sys.stderr)
     else:
         if response.strip() != 'ok':
@@ -168,7 +171,7 @@ if __name__ == '__main__':
         if match is None:
             try:
                 logging.info(line.strip())
-            except urllib2.URLError, e:
+            except urllib.error.URLError as e:
                 print(e, file=sys.stderr)
         else:
             level, message = match.groups()
@@ -186,5 +189,5 @@ if __name__ == '__main__':
                     logging.debug(message)
                 else:
                     logging.info(line)
-            except urllib2.URLError, e:
+            except urllib.error.URLError as e:
                 print(e, file=sys.stderr)

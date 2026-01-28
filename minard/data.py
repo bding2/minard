@@ -47,8 +47,12 @@ def flush_to_redis(dict_, name, time_):
                 for interval in HASH_INTERVALS]
 
     if len(dict_) > 0:
-        hmincrbyfloat(sum_keys, dict_, client=p)
-        hmincr(len_keys, dict_.keys(), client=p)
+        # Redis script expects string field names and native python types
+        # convert numpy ints/floats to plain strings and floats
+        str_dict = {str(k): float(v) for k, v in dict_.items()}
+        fields = [str(k) for k in dict_.keys()]
+        hmincrbyfloat(sum_keys, str_dict, client=p)
+        hmincr(len_keys, fields, client=p)
 
     for interval in HASH_INTERVALS:
         basekey = 'ts:%i:%i:%s' % (interval, time_//interval, name)

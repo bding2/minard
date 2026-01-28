@@ -1,22 +1,46 @@
+#!/usr/bin/env python3
 import os
-os.environ['MINARD_SETTINGS'] = '/home/snotdaq/SNOPLUS/minard/settings.conf'
+import sys
+import json
+import argparse
 
-from minard.db import engine_nl
-from sqlalchemy import text
+def find_repo_root(max_up=6):
+    p = os.path.abspath(os.path.dirname(__file__))
+    for _ in range(max_up):
+        if os.path.isdir(os.path.join(p, 'minard')):
+            return p
+        p = os.path.dirname(p)
+    return None
 
-try:
-    conn = engine_nl.connect()
-    
-    query = "SELECT meta_data, name, timestamp, run_min FROM run_selection WHERE type = 'RS_REPORT' AND criteria = 'scintillator' ORDER BY run_min DESC LIMIT 50"
-    
-    result = conn.execute(text(query))
-    rows = result.fetchall()
-    print(f"Found {len(rows)} rows")
-    if rows:
-        print(f"First row: {rows[0]}")
-    
-    conn.close()
-except Exception as e:
-    import traceback
-    print(f"Error: {e}")
-    traceback.print_exc()
+def main():
+    parser = argparse.ArgumentParser(description='Call get_list_history(run) from minard.RSTools')
+    parser.add_argument('run', type=int, help='Run number (int)')
+    args = parser.parse_args()
+
+    repo_root = find_repo_root()
+    if repo_root is None:
+        print('ERROR: could not find repository root containing "minard" package', file=sys.stderr)
+        sys.exit(2)
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
+
+    try:
+        from minard.RSTools import get_list_history
+    except Exception as e:
+        print('ERROR importing get_list_history:', e, file=sys.stderr)
+        sys.exit(3)
+
+    try:
+        data = get_list_history(args.run)
+    except Exception as e:
+        print('ERROR calling get_list_history:', e, file=sys.stderr)
+        sys.exit(4)
+
+    if data is False:
+        print('null')
+        return
+
+    print(json.dumps(data, indent=2, default=str))
+
+if __name__ == '__main__':
+    main()

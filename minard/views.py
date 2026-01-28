@@ -1,6 +1,7 @@
 from __future__ import division, print_function
 from . import app
 from flask import render_template, jsonify, request, redirect, url_for, flash, make_response
+import socket
 from itertools import product
 import time
 from redis import Redis
@@ -1983,12 +1984,10 @@ def runselection():
         current_run = 0
     
     # Get variable info from webpage (with defaults defined)
-    limit = request.args.get("limit", 25, type=int)
-    offset = request.args.get("offset", 0, type=int)
     result = request.args.get("result", "All", type=str)
     criteria = request.args.get("criteria", "scintillator", type=str)
     selected_run = request.args.get("selected_run", 0, type=int)
-    run_range_low = request.args.get("run_range_low", max(0, current_run - 100), type=int)
+    run_range_low = request.args.get("run_range_low", max(0, current_run - 25), type=int)
     run_range_high = request.args.get("run_range_high", current_run, type=int)
     year_low = request.args.get("year_low", 0, type=int)
     month_low = request.args.get("month_low", 0, type=int)
@@ -2077,7 +2076,7 @@ def runselection():
             'scintillator_bronze': result_bronze,
             'scintillator_nickel': result_nickel
         }
-    run_info, drop_down_crits = RSTools.list_runs_info(limit, offset, result_param, criteria, selected_run, run_range, date_range)
+    run_info, drop_down_crits = RSTools.list_runs_info(result_param, criteria, selected_run, run_range, date_range)
 
     # Collapse scintillator variants in dropdown: show only 'scintillator'
     collapsed = []
@@ -2094,7 +2093,7 @@ def runselection():
     drop_down_crits = collapsed
 
     # Return info to webpage
-    return render_template('runselection.html', run_info=run_info, drop_down_crits=drop_down_crits, criteria=criteria, limit=limit, offset=offset, result=result, selected_run=selected_run, run_range_low=run_range_low, run_range_high=run_range_high,
+    return render_template('runselection.html', run_info=run_info, drop_down_crits=drop_down_crits, criteria=criteria, result=result, selected_run=selected_run, run_range_low=run_range_low, run_range_high=run_range_high,
                            year_low=year_low, month_low=month_low, day_low=day_low, year_high=year_high, month_high=month_high, day_high=day_high,
                            result_gold=result_gold, result_silver=result_silver, result_bronze=result_bronze, result_nickel=result_nickel)
 
@@ -2256,3 +2255,44 @@ def xsnoed():
     Container should be running on localhost:8080.
     """
     return render_template('xsnoed.html')
+
+
+@app.route('/vnc.html')
+@app.route('/vnc_lite.html')
+def vnc_redirect():
+        """Redirect requests for vnc pages to the noVNC/websockify server.
+
+        Optional query args:
+            - host: noVNC host (default: 127.0.0.1)
+            - port: noVNC port (default: 8080)
+        Example: /vnc.html?host=127.0.0.1&port=8080
+        """
+        # use fixed noVNC host on this machine
+        FIXED_NOVNC_HOST = '172.19.128.184'
+        host = request.args.get('host', FIXED_NOVNC_HOST)
+        port = request.args.get('port', app.config.get('NOVNC_PORT', 8080))
+        # preserve requested path (/vnc.html or /vnc_lite.html)
+        path = request.path
+        target = 'http://%s:%s%s' % (host, port, path)
+        return redirect(target, code=302)
+
+
+@app.route('/desktop')
+def desktop():
+    """Render virtual desktop page.
+
+    Query params (optional): vnc_host, vnc_port, vnc_target_port, vnc_path, vnc_password
+    """
+    # always use the known server IP for noVNC by default
+    vnc_host = request.args.get('vnc_host', '172.19.128.184')
+    vnc_port = request.args.get('vnc_port', 8080, type=int)
+    vnc_target_port = request.args.get('vnc_target_port', 5900, type=int)
+    vnc_path = request.args.get('vnc_path', '/vnc.html')
+    vnc_password = request.args.get('vnc_password', '')
+
+    return render_template('desktop.html',
+                           vnc_host=vnc_host,
+                           vnc_port=vnc_port,
+                           vnc_target_port=vnc_target_port,
+                           vnc_path=vnc_path,
+                           vnc_password=vnc_password)

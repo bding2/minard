@@ -1,0 +1,12 @@
+[Unit]
+Description=Minard Base Data Consumer
+After=network.target
+
+[Service]
+User=minard
+Environment="MINARD_SETTINGS=/etc/minard/settings.cfg"
+ExecStart=/opt/minard/bin/minard-base --logfile=/var/log/minard/minard_base.log
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

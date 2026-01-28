@@ -1,0 +1,13 @@
+[Unit]
+Description=DAQ dispatch chain
+After=network.target
+
+[Service]
+Type=simple
+User=snotdaq
+WorkingDirectory=/home/snotdaq/SNOPLUS
+ExecStart=/home/snotdaq/SNOPLUS/dispatch.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
