@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=snotdaq
 WorkingDirectory=/home/snotdaq/SNOPLUS
-ExecStart=/home/snotdaq/SNOPLUS/dispatch.sh
+ExecStart=/usr/local/bin/dispatch.sh
 Restart=always
 
 [Install]

@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=snotdaq
 WorkingDirectory=/home/snotdaq/SNOPLUS
-ExecStart=/home/snotdaq/SNOPLUS/start_xsnoed.sh
+ExecStart=/usr/local/bin/start_xsnoed.sh
 Restart=always
 
 [Install]

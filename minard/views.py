@@ -119,7 +119,9 @@ PROGRAMS = [#Program('builder','builder1', description="event builder"),
             Program('tubii','tubii', description="tubii server",
 		    display_log=False),
             Program('noel','buffer1', description="noel server",
-		    display_log=False)
+		    display_log=False),
+            Program('test', 'buffer1', description="test program"),
+            Program('L2', 'buffer1', description="L2 program")
 ]
 
 def nocache(view):

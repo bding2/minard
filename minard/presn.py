@@ -37,7 +37,7 @@ def load_presn_runs(offset, limit):
                 results.append(dict(db.get(run_id).items()))
             except KeyError:
                 app.logger.warning("Code returned KeyError searching for presn information in the couchDB. Run Number: %d" % run)
-    results.sort(reverse=True)
+    results.sort(key=lambda x: x.get('run', 0), reverse=True)
     return results, total, offset, limit
 
 def load_presn_search(search, start, end, offset, limit):

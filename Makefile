@@ -40,7 +40,7 @@ install: /opt/minard/bin/activate
 	sudo $(INSTALL) init/xsnoed.service /etc/systemd/system
 
 	sudo systemctl enable gunicorn
-# 	sudo systemctl enable gunicorn_snoplus_log
+	sudo systemctl enable gunicorn_snoplus_log
 	sudo systemctl enable minard-dispatch
 	sudo systemctl enable minard-cmos
 	sudo systemctl enable minard-base
@@ -49,7 +49,7 @@ install: /opt/minard/bin/activate
 	sudo systemctl enable xsnoed
 
 	sudo systemctl start gunicorn
-# 	sudo systemctl start gunicorn_snoplus_log
+	sudo systemctl start gunicorn_snoplus_log
 	sudo systemctl start minard-dispatch
 	sudo systemctl start minard-cmos
 	sudo systemctl start minard-base

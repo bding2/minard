@@ -5,9 +5,12 @@ After=network.target
 [Service]
 User=snotdaq
 Group=snotdaq
+RuntimeDirectory=gunicorn_snoplus_log
+RuntimeDirectoryMode=0755
+PIDFile=/run/gunicorn_snoplus_log/gunicorn.pid
 WorkingDirectory=/home/snotdaq/SNOPLUS/minard
 Environment="MINARD_SETTINGS=/etc/minard/settings.cfg"
-ExecStart=/opt/minard/bin/gunicorn -w 4 -b 0.0.0.0:8081 snoplus_log:app --error-logfile=/var/log/gunicorn_snoplus_log.log --pid=/var/run/gunicorn_snoplus_log.pid
+ExecStart=/opt/minard/bin/gunicorn -w 4 -b 0.0.0.0:8081 snoplus_log:app --pid /run/gunicorn_snoplus_log/gunicorn.pid --error-logfile=/var/log/gunicorn_snoplus_log.log
 Restart=always
 
 [Install]
